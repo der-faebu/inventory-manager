@@ -21,4 +21,12 @@ function freshGlobals() {
   return { Schema: globalThis.Schema, Store: globalThis.Store };
 }
 
-module.exports = { freshGlobals };
+function loadXLSX() {
+  // lib/xlsx.full.min.js is a UMD build: in a browser <script> tag it attaches to window.XLSX,
+  // but under Node's CommonJS it exports via module.exports instead. require() it directly here
+  // and mirror the browser's global so code under test can keep reading a plain global.XLSX.
+  globalThis.XLSX = require('../../lib/xlsx.full.min.js');
+  return globalThis.XLSX;
+}
+
+module.exports = { freshGlobals, loadXLSX };

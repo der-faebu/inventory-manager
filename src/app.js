@@ -7,6 +7,7 @@
   var Store = global.Store;
   var FileIO = global.FileIO;
   var LegacyMigration = global.LegacyMigration;
+  var ExcelExport = global.ExcelExport;
   var signalsCore = global.preactSignalsCore;
 
   var expandedFolders = signalsCore.signal({});
@@ -30,9 +31,7 @@
     errorMessage.value = message;
   }
 
-  function downloadDocument(doc, name) {
-    var json = FileIO.serializeDocument(doc);
-    var blob = new global.Blob([json], { type: 'application/json' });
+  function downloadBlob(blob, name) {
     var url = global.URL.createObjectURL(blob);
     var link = global.document.createElement('a');
     link.href = url;
@@ -41,6 +40,25 @@
     link.click();
     global.document.body.removeChild(link);
     global.URL.revokeObjectURL(url);
+  }
+
+  function downloadDocument(doc, name) {
+    var json = FileIO.serializeDocument(doc);
+    downloadBlob(new global.Blob([json], { type: 'application/json' }), name);
+  }
+
+  function doExportExcel() {
+    try {
+      var workbook = ExcelExport.buildWorkbook(Store.document.value);
+      var binary = ExcelExport.writeBuffer(workbook);
+      var blob = new global.Blob([binary], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      var customerName = Store.document.value.customer.name || 'Kunde';
+      var name = 'Bestandsaufnahme ' + FileIO.sanitizeFilename(customerName) + '.xlsx';
+      downloadBlob(blob, name);
+      showStatus('Exported ' + name);
+    } catch (e) {
+      showError('Export failed: ' + e.message);
+    }
   }
 
   function performSave(name) {
@@ -175,7 +193,7 @@
   }
 
   function entityLabel(key, entity) {
-    return entity.name || '(unnamed)';
+    return Schema.entityLabel(key, entity);
   }
 
   function Tree() {
@@ -734,6 +752,7 @@
         <button onClick=${doSave}>Save</button>
         <button onClick=${doSaveAs}>Save As…</button>
         <button onClick=${triggerOpenFilePicker}>Open…</button>
+        <button onClick=${doExportExcel}>Export to Excel…</button>
         <input
           id="open-file-input"
           type="file"

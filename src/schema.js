@@ -167,6 +167,24 @@
     return entity;
   }
 
+  // Per-collection title field(s), in fallback order. Default is 'name' when a collection isn't listed.
+  var TITLE_FIELDS = {
+    licenses: ['product'],
+    mailboxes: ['address'],
+    monitors: ['inventoryNumber', 'model'],
+  };
+
+  function entityLabel(collectionKey, entity) {
+    var fields = TITLE_FIELDS[collectionKey] || ['name'];
+    for (var i = 0; i < fields.length; i++) {
+      var value = entity[fields[i]];
+      if (value) {
+        return value;
+      }
+    }
+    return '(unnamed)';
+  }
+
   function portStatus(device, portInfo) {
     if (device) {
       return 'occupied';
@@ -236,5 +254,6 @@
     emptyEntity: emptyEntity,
     makeId: makeId,
     portStatus: portStatus,
+    entityLabel: entityLabel,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
