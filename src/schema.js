@@ -46,6 +46,10 @@
 
   var DEVICE_TYPES = ['NUC', 'Laptop', 'PC', 'Thin Client', 'Server', 'Printer', 'Other'];
   var CONDITION = ['good', 'fair', 'replace'];
+  var NETWORK_CATEGORIES = ['Switch', 'Router', 'Firewall', 'Access Point', 'Other'];
+  var YES_NO = ['Yes', 'No'];
+  var MAILBOX_TYPES = ['Shared Mailbox', 'Resource', 'Distribution List'];
+  var MAILBOX_HOSTING = ['M365', 'Exchange', 'Other'];
 
   var DEVICE_FIELDS = [
     { key: 'name', label: 'Device name', type: 'text' },
@@ -64,12 +68,89 @@
     { key: 'remark', label: 'Remark', type: 'text' },
   ];
 
-  function emptyDevice() {
-    var device = {};
-    DEVICE_FIELDS.forEach(function (field) {
-      device[field.key] = '';
+  var USER_FIELDS = [
+    { key: 'name', label: 'Name (Last name First name)', type: 'text' },
+    { key: 'login', label: 'Username', type: 'text' },
+    { key: 'department', label: 'Department', type: 'text' },
+    { key: 'role', label: 'Role', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'mfa', label: 'MFA', type: 'select', options: YES_NO },
+    { key: 'admin', label: 'Admin rights', type: 'select', options: YES_NO },
+    { key: 'remark', label: 'Remark', type: 'text' },
+  ];
+
+  var NETWORK_FIELDS = [
+    { key: 'name', label: 'Name', type: 'text' },
+    { key: 'category', label: 'Category', type: 'select', options: NETWORK_CATEGORIES },
+    { key: 'model', label: 'Manufacturer / Model', type: 'text' },
+    { key: 'serialNumber', label: 'Serial number', type: 'text' },
+    { key: 'ip', label: 'IP address', type: 'text' },
+    { key: 'mac', label: 'MAC address', type: 'text' },
+    { key: 'firmware', label: 'Firmware', type: 'text' },
+    { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
+    { key: 'rack', label: 'Room / Rack', type: 'text' },
+    { key: 'portCount', label: 'Total ports', type: 'text' },
+    { key: 'uplink', label: 'Uplink to', type: 'text' },
+    { key: 'supportUntil', label: 'Warranty / Support until', type: 'text' },
+    { key: 'remark', label: 'Remark', type: 'text' },
+  ];
+
+  var APPLICATION_FIELDS = [
+    { key: 'name', label: 'Application', type: 'text' },
+    { key: 'version', label: 'Version', type: 'text' },
+    { key: 'vendor', label: 'Vendor', type: 'text' },
+    { key: 'licenseType', label: 'License type', type: 'text' },
+    { key: 'businessCritical', label: 'Business-critical', type: 'select', options: YES_NO },
+  ];
+
+  var LICENSE_FIELDS = [
+    { key: 'product', label: 'License type / Product', type: 'text' },
+    { key: 'licenseType', label: 'License type', type: 'text' },
+    { key: 'purchasedCount', label: 'Purchased (count)', type: 'text' },
+    { key: 'term', label: 'Term / Renewal', type: 'text' },
+    { key: 'remark', label: 'Remark', type: 'text' },
+  ];
+
+  var LOCATION_FIELDS = [
+    { key: 'name', label: 'Name', type: 'text' },
+    { key: 'address', label: 'Address', type: 'text' },
+    { key: 'rooms', label: 'Rooms', type: 'text' },
+    { key: 'contact', label: 'Contact / Phone / Email', type: 'text' },
+    { key: 'serverRoom', label: 'Server room / Rack', type: 'text' },
+  ];
+
+  var MAILBOX_FIELDS = [
+    { key: 'address', label: 'Email address', type: 'text' },
+    { key: 'type', label: 'Type', type: 'select', options: MAILBOX_TYPES },
+    { key: 'owner', label: 'Owner', type: 'text' },
+    { key: 'hosting', label: 'Hosting', type: 'select', options: MAILBOX_HOSTING },
+  ];
+
+  var MONITOR_FIELDS = [
+    { key: 'inventoryNumber', label: 'Inventory no.', type: 'text' },
+    { key: 'model', label: 'Manufacturer / Model', type: 'text' },
+    { key: 'serialNumber', label: 'Serial number', type: 'text' },
+    { key: 'connector', label: 'Connector', type: 'text' },
+    { key: 'device', label: 'Connected to', type: 'ref', collection: 'devices' },
+  ];
+
+  var COLLECTION_FIELDS = {
+    devices: DEVICE_FIELDS,
+    users: USER_FIELDS,
+    network: NETWORK_FIELDS,
+    applications: APPLICATION_FIELDS,
+    licenses: LICENSE_FIELDS,
+    locations: LOCATION_FIELDS,
+    mailboxes: MAILBOX_FIELDS,
+    monitors: MONITOR_FIELDS,
+  };
+
+  function emptyEntity(collectionKey) {
+    var entity = {};
+    COLLECTION_FIELDS[collectionKey].forEach(function (field) {
+      entity[field.key] = '';
     });
-    return device;
+    return entity;
   }
 
   function makeId() {
@@ -111,10 +192,22 @@
     CUSTOMER_FIELDS: CUSTOMER_FIELDS,
     DEVICE_TYPES: DEVICE_TYPES,
     CONDITION: CONDITION,
+    NETWORK_CATEGORIES: NETWORK_CATEGORIES,
+    YES_NO: YES_NO,
+    MAILBOX_TYPES: MAILBOX_TYPES,
+    MAILBOX_HOSTING: MAILBOX_HOSTING,
     DEVICE_FIELDS: DEVICE_FIELDS,
+    USER_FIELDS: USER_FIELDS,
+    NETWORK_FIELDS: NETWORK_FIELDS,
+    APPLICATION_FIELDS: APPLICATION_FIELDS,
+    LICENSE_FIELDS: LICENSE_FIELDS,
+    LOCATION_FIELDS: LOCATION_FIELDS,
+    MAILBOX_FIELDS: MAILBOX_FIELDS,
+    MONITOR_FIELDS: MONITOR_FIELDS,
+    COLLECTION_FIELDS: COLLECTION_FIELDS,
     emptyDocument: emptyDocument,
     emptyCustomer: emptyCustomer,
-    emptyDevice: emptyDevice,
+    emptyEntity: emptyEntity,
     makeId: makeId,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

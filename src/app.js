@@ -168,29 +168,31 @@
     `;
   }
 
-  function DeviceList() {
-    var devices = Store.document.value.devices;
+  function EntityList(props) {
+    var collectionKey = props.collectionKey;
+    var info = Schema.COLLECTIONS[collectionKey];
+    var entities = Store.document.value[collectionKey];
     return html`
       <div class="detail-grid">
-        <h2>Devices</h2>
+        <h2>${info.many}</h2>
         <button
           onClick=${function () {
-            var device = Store.addDevice();
-            Store.selectedKey.value = 'devices:' + device.id;
+            var entity = Store.addEntity(collectionKey);
+            Store.selectedKey.value = collectionKey + ':' + entity.id;
           }}
         >
-          + New: Device
+          + New: ${info.one}
         </button>
         <ul class="entity-list">
-          ${devices.map(
-            (device) => html`
+          ${entities.map(
+            (entity) => html`
               <li
                 class="entity-list-item"
                 onClick=${function () {
-                  Store.selectedKey.value = 'devices:' + device.id;
+                  Store.selectedKey.value = collectionKey + ':' + entity.id;
                 }}
               >
-                ${entityLabel('devices', device)}
+                ${entityLabel(collectionKey, entity)}
               </li>
             `
           )}
@@ -199,28 +201,65 @@
     `;
   }
 
-  function DeviceDetail(props) {
+  function DeviceMonitors(props) {
     var device = props.device;
+    var monitors = Store.document.value.monitors.filter(function (monitor) {
+      return monitor.device === device.id;
+    });
+
+    return html`
+      <div class="device-monitors">
+        <h3>Monitors</h3>
+        <button
+          onClick=${function () {
+            var monitor = Store.addMonitorForDevice(device.id);
+            Store.selectedKey.value = 'monitors:' + monitor.id;
+          }}
+        >
+          + Monitor
+        </button>
+        <ul class="entity-list">
+          ${monitors.map(
+            (monitor) => html`
+              <li
+                class="entity-list-item"
+                onClick=${function () {
+                  Store.selectedKey.value = 'monitors:' + monitor.id;
+                }}
+              >
+                ${entityLabel('monitors', monitor)}
+              </li>
+            `
+          )}
+        </ul>
+      </div>
+    `;
+  }
+
+  function EntityDetail(props) {
+    var collectionKey = props.collectionKey;
+    var entity = props.entity;
+    var fields = Schema.COLLECTION_FIELDS[collectionKey];
 
     function onChange(fieldKey, value) {
       var patch = {};
       patch[fieldKey] = value;
-      Store.updateDevice(device.id, patch);
+      Store.updateEntity(collectionKey, entity.id, patch);
     }
 
     return html`
       <div class="detail-grid">
-        <h2>${entityLabel('devices', device)}</h2>
+        <h2>${entityLabel(collectionKey, entity)}</h2>
         <table class="field-grid">
           <tbody>
-            ${Schema.DEVICE_FIELDS.map(
+            ${fields.map(
               (field) => html`
                 <tr>
                   <td class="field-label">${field.label}</td>
                   <td class="field-value">
                     <${FieldInput}
                       field=${field}
-                      value=${device[field.key]}
+                      value=${entity[field.key]}
                       onChange=${(value) => onChange(field.key, value)}
                     />
                   </td>
@@ -229,10 +268,11 @@
             )}
           </tbody>
         </table>
+        ${collectionKey === 'devices' ? html`<${DeviceMonitors} device=${entity} />` : ''}
         <button
           class="delete-button"
           onClick=${function () {
-            Store.deleteDevice(device.id);
+            Store.deleteEntity(collectionKey, entity.id);
           }}
         >
           Delete
@@ -246,18 +286,25 @@
     if (selected === 'customer') {
       return html`<${CustomerGrid} />`;
     }
-    if (selected === 'devices') {
-      return html`<${DeviceList} />`;
+
+    var collectionKey = Schema.ALL_COLLECTION_KEYS.find(function (key) {
+      return selected === key || selected.indexOf(key + ':') === 0;
+    });
+
+    if (collectionKey && selected === collectionKey) {
+      return html`<${EntityList} collectionKey=${collectionKey} />`;
     }
-    if (selected.indexOf('devices:') === 0) {
-      var id = selected.slice('devices:'.length);
-      var device = Store.document.value.devices.find(function (d) {
-        return d.id === id;
+
+    if (collectionKey) {
+      var id = selected.slice((collectionKey + ':').length);
+      var entity = Store.document.value[collectionKey].find(function (e) {
+        return e.id === id;
       });
-      if (device) {
-        return html`<${DeviceDetail} device=${device} />`;
+      if (entity) {
+        return html`<${EntityDetail} collectionKey=${collectionKey} entity=${entity} />`;
       }
     }
+
     return html`<div class="detail-grid"><p>Nothing to show yet.</p></div>`;
   }
 

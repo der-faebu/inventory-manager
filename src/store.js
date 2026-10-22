@@ -36,34 +36,50 @@
     bumpRevision();
   }
 
-  function addDevice() {
-    var device = Object.assign({ id: Schema.makeId() }, Schema.emptyDevice());
-    document.value = Object.assign({}, document.value, {
-      devices: document.value.devices.concat([device]),
-    });
+  function addEntity(collectionKey, overrides) {
+    var entity = Object.assign({ id: Schema.makeId() }, Schema.emptyEntity(collectionKey), overrides || {});
+    var patch = {};
+    patch[collectionKey] = document.value[collectionKey].concat([entity]);
+    document.value = Object.assign({}, document.value, patch);
     bumpRevision();
-    return device;
+    return entity;
+  }
+
+  function updateEntity(collectionKey, id, patch) {
+    var collectionPatch = {};
+    collectionPatch[collectionKey] = document.value[collectionKey].map(function (entity) {
+      return entity.id === id ? Object.assign({}, entity, patch) : entity;
+    });
+    document.value = Object.assign({}, document.value, collectionPatch);
+    bumpRevision();
+  }
+
+  function deleteEntity(collectionKey, id) {
+    var collectionPatch = {};
+    collectionPatch[collectionKey] = document.value[collectionKey].filter(function (entity) {
+      return entity.id !== id;
+    });
+    document.value = Object.assign({}, document.value, collectionPatch);
+    if (selectedKey.value === collectionKey + ':' + id) {
+      selectedKey.value = collectionKey;
+    }
+    bumpRevision();
+  }
+
+  function addDevice() {
+    return addEntity('devices');
   }
 
   function updateDevice(id, patch) {
-    document.value = Object.assign({}, document.value, {
-      devices: document.value.devices.map(function (device) {
-        return device.id === id ? Object.assign({}, device, patch) : device;
-      }),
-    });
-    bumpRevision();
+    updateEntity('devices', id, patch);
   }
 
   function deleteDevice(id) {
-    document.value = Object.assign({}, document.value, {
-      devices: document.value.devices.filter(function (device) {
-        return device.id !== id;
-      }),
-    });
-    if (selectedKey.value === 'devices:' + id) {
-      selectedKey.value = 'devices';
-    }
-    bumpRevision();
+    deleteEntity('devices', id);
+  }
+
+  function addMonitorForDevice(deviceId) {
+    return addEntity('monitors', { device: deviceId });
   }
 
   global.Store = {
@@ -76,8 +92,12 @@
     markSaved: markSaved,
     resetDocument: resetDocument,
     updateCustomer: updateCustomer,
+    addEntity: addEntity,
+    updateEntity: updateEntity,
+    deleteEntity: deleteEntity,
     addDevice: addDevice,
     updateDevice: updateDevice,
     deleteDevice: deleteDevice,
+    addMonitorForDevice: addMonitorForDevice,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
