@@ -6,6 +6,7 @@
   var Schema = global.Schema;
   var Store = global.Store;
   var FileIO = global.FileIO;
+  var LegacyMigration = global.LegacyMigration;
   var signalsCore = global.preactSignalsCore;
 
   var expandedFolders = signalsCore.signal({});
@@ -14,6 +15,7 @@
   var saveAsPrompt = signalsCore.signal(null); // { defaultName } or null
   var unsavedChangesPrompt = signalsCore.signal(null); // { pendingAction: 'new' | 'open' } or null
   var pendingOpenFile = signalsCore.signal(null); // File object staged while the unsaved-changes modal is open
+  var migrationWarning = signalsCore.signal(null); // array of unmapped-field strings, or null
 
   function showStatus(message) {
     statusMessage.value = message;
@@ -84,10 +86,30 @@
   function loadFile(file) {
     var reader = new global.FileReader();
     reader.onload = function () {
+      var parsed;
       try {
-        var doc = FileIO.parseDocument(reader.result);
-        Store.loadDocument(doc, file.name);
-        showStatus('Opened ' + file.name);
+        parsed = JSON.parse(reader.result);
+      } catch (e) {
+        showError('Open failed: file is not valid JSON.');
+        return;
+      }
+
+      var format = LegacyMigration.detectFormat(parsed);
+      try {
+        if (format === 'current') {
+          Store.loadDocument(parsed, file.name);
+          showStatus('Opened ' + file.name);
+        } else if (format === 'legacy') {
+          var result = LegacyMigration.migrate(parsed);
+          Store.loadDocument(result.document, null);
+          Store.bumpRevision();
+          showStatus('Migrated legacy file ' + file.name);
+          if (result.unmappedFields.length > 0) {
+            migrationWarning.value = result.unmappedFields;
+          }
+        } else {
+          showError('Open failed: file is not a recognized inventory document.');
+        }
       } catch (e) {
         showError('Open failed: ' + e.message);
       }
@@ -827,6 +849,33 @@
     `;
   }
 
+  function MigrationWarningModal() {
+    var fields = migrationWarning.value;
+    if (!fields) {
+      return '';
+    }
+    return html`
+      <div class="modal-overlay">
+        <div class="modal">
+          <h3>Migration warning</h3>
+          <p>The following fields from the legacy file were not recognized and were dropped:</p>
+          <ul class="migration-warning-list">
+            ${fields.map((field) => html`<li>${field}</li>`)}
+          </ul>
+          <div class="modal-actions">
+            <button
+              onClick=${function () {
+                migrationWarning.value = null;
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function App() {
     return html`
       <div class="app-root">
@@ -838,6 +887,7 @@
         <${SaveAsModal} />
         <${UnsavedChangesModal} />
         <${ErrorModal} />
+        <${MigrationWarningModal} />
       </div>
     `;
   }
@@ -888,6 +938,7 @@
     errorMessage.value;
     saveAsPrompt.value;
     unsavedChangesPrompt.value;
+    migrationWarning.value;
     rerender();
   });
 })(typeof window !== 'undefined' ? window : globalThis);
