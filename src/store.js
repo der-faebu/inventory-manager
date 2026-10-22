@@ -13,13 +13,17 @@
   });
 
   var selectedKey = signal('customer');
+  var filename = signal(null);
 
   function bumpRevision() {
     revision.value = revision.value + 1;
   }
 
-  function markSaved() {
+  function markSaved(usedFilename) {
     lastSavedRevision.value = revision.value;
+    if (usedFilename) {
+      filename.value = usedFilename;
+    }
   }
 
   function resetDocument() {
@@ -27,6 +31,15 @@
     revision.value = 0;
     lastSavedRevision.value = 0;
     selectedKey.value = 'customer';
+    filename.value = null;
+  }
+
+  function loadDocument(doc, loadedFilename) {
+    document.value = doc;
+    revision.value = 0;
+    lastSavedRevision.value = 0;
+    selectedKey.value = 'customer';
+    filename.value = loadedFilename;
   }
 
   function updateCustomer(patch) {
@@ -167,9 +180,11 @@
     lastSavedRevision: lastSavedRevision,
     dirty: dirty,
     selectedKey: selectedKey,
+    filename: filename,
     bumpRevision: bumpRevision,
     markSaved: markSaved,
     resetDocument: resetDocument,
+    loadDocument: loadDocument,
     updateCustomer: updateCustomer,
     addEntity: addEntity,
     updateEntity: updateEntity,

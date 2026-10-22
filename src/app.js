@@ -5,9 +5,146 @@
   var html = global.htm.bind(preact.h);
   var Schema = global.Schema;
   var Store = global.Store;
+  var FileIO = global.FileIO;
   var signalsCore = global.preactSignalsCore;
 
   var expandedFolders = signalsCore.signal({});
+  var statusMessage = signalsCore.signal('');
+  var errorMessage = signalsCore.signal('');
+  var saveAsPrompt = signalsCore.signal(null); // { defaultName } or null
+  var unsavedChangesPrompt = signalsCore.signal(null); // { pendingAction: 'new' | 'open' } or null
+  var pendingOpenFile = signalsCore.signal(null); // File object staged while the unsaved-changes modal is open
+
+  function showStatus(message) {
+    statusMessage.value = message;
+    global.setTimeout(function () {
+      if (statusMessage.value === message) {
+        statusMessage.value = '';
+      }
+    }, 3000);
+  }
+
+  function showError(message) {
+    errorMessage.value = message;
+  }
+
+  function downloadDocument(doc, name) {
+    var json = FileIO.serializeDocument(doc);
+    var blob = new global.Blob([json], { type: 'application/json' });
+    var url = global.URL.createObjectURL(blob);
+    var link = global.document.createElement('a');
+    link.href = url;
+    link.download = name;
+    global.document.body.appendChild(link);
+    link.click();
+    global.document.body.removeChild(link);
+    global.URL.revokeObjectURL(url);
+  }
+
+  function performSave(name) {
+    try {
+      downloadDocument(Store.document.value, name);
+      Store.markSaved(name);
+      showStatus('Saved ' + name);
+      return true;
+    } catch (e) {
+      showError('Save failed: ' + e.message);
+      return false;
+    }
+  }
+
+  function resolveSaveName() {
+    return Store.filename.value || FileIO.suggestFilename(Store.document.value);
+  }
+
+  function doSave() {
+    performSave(resolveSaveName());
+  }
+
+  function doSaveAs() {
+    saveAsPrompt.value = { defaultName: resolveSaveName() };
+  }
+
+  function confirmSaveAs(name) {
+    saveAsPrompt.value = null;
+    if (name) {
+      performSave(name);
+    }
+  }
+
+  function doNew() {
+    if (Store.dirty.value) {
+      unsavedChangesPrompt.value = { pendingAction: 'new' };
+      return;
+    }
+    Store.resetDocument();
+    showStatus('New document created');
+  }
+
+  function loadFile(file) {
+    var reader = new global.FileReader();
+    reader.onload = function () {
+      try {
+        var doc = FileIO.parseDocument(reader.result);
+        Store.loadDocument(doc, file.name);
+        showStatus('Opened ' + file.name);
+      } catch (e) {
+        showError('Open failed: ' + e.message);
+      }
+    };
+    reader.onerror = function () {
+      showError('Open failed: could not read the file.');
+    };
+    reader.readAsText(file);
+  }
+
+  function doOpen(file) {
+    if (!file) {
+      return;
+    }
+    if (Store.dirty.value) {
+      pendingOpenFile.value = file;
+      unsavedChangesPrompt.value = { pendingAction: 'open' };
+      return;
+    }
+    loadFile(file);
+  }
+
+  function resolveUnsavedChanges(choice) {
+    var prompt = unsavedChangesPrompt.value;
+    if (!prompt) {
+      return;
+    }
+    if (choice === 'cancel') {
+      unsavedChangesPrompt.value = null;
+      pendingOpenFile.value = null;
+      return;
+    }
+    if (choice === 'save') {
+      if (!performSave(resolveSaveName())) {
+        return;
+      }
+    }
+    unsavedChangesPrompt.value = null;
+    if (prompt.pendingAction === 'new') {
+      Store.resetDocument();
+      showStatus('New document created');
+    } else if (prompt.pendingAction === 'open') {
+      var file = pendingOpenFile.value;
+      pendingOpenFile.value = null;
+      if (file) {
+        loadFile(file);
+      }
+    }
+  }
+
+  function triggerOpenFilePicker() {
+    var input = global.document.getElementById('open-file-input');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
 
   function toggleFolder(key) {
     var current = expandedFolders.value;
@@ -568,11 +705,139 @@
     return html`<div class="detail-grid"><p>Nothing to show yet.</p></div>`;
   }
 
+  function Toolbar() {
+    return html`
+      <div class="toolbar">
+        <button onClick=${doNew}>New</button>
+        <button onClick=${doSave}>Save</button>
+        <button onClick=${doSaveAs}>Save As…</button>
+        <button onClick=${triggerOpenFilePicker}>Open…</button>
+        <input
+          id="open-file-input"
+          type="file"
+          accept=".bestand,application/json"
+          style="display: none"
+          onChange=${function (e) {
+            doOpen(e.target.files[0]);
+          }}
+        />
+        <span class="toolbar-filename">${Store.filename.value || '(unsaved)'}${Store.dirty.value ? ' •' : ''}</span>
+        <span class="toolbar-status">${statusMessage.value}</span>
+      </div>
+    `;
+  }
+
+  function SaveAsModal() {
+    var prompt = saveAsPrompt.value;
+    if (!prompt) {
+      return '';
+    }
+    var nameValue = prompt.defaultName;
+    return html`
+      <div class="modal-overlay">
+        <div class="modal">
+          <h3>Save As</h3>
+          <input
+            type="text"
+            class="save-as-input"
+            value=${nameValue}
+            onInput=${function (e) {
+              saveAsPrompt.value = Object.assign({}, prompt, { defaultName: e.target.value });
+            }}
+          />
+          <div class="modal-actions">
+            <button
+              onClick=${function () {
+                confirmSaveAs(nameValue);
+              }}
+            >
+              Save
+            </button>
+            <button
+              onClick=${function () {
+                saveAsPrompt.value = null;
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function UnsavedChangesModal() {
+    var prompt = unsavedChangesPrompt.value;
+    if (!prompt) {
+      return '';
+    }
+    return html`
+      <div class="modal-overlay">
+        <div class="modal">
+          <h3>Unsaved changes</h3>
+          <p>You have unsaved changes. Do you want to save before continuing?</p>
+          <div class="modal-actions">
+            <button
+              onClick=${function () {
+                resolveUnsavedChanges('save');
+              }}
+            >
+              Save
+            </button>
+            <button
+              onClick=${function () {
+                resolveUnsavedChanges('discard');
+              }}
+            >
+              Discard
+            </button>
+            <button
+              onClick=${function () {
+                resolveUnsavedChanges('cancel');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function ErrorModal() {
+    if (!errorMessage.value) {
+      return '';
+    }
+    return html`
+      <div class="modal-overlay">
+        <div class="modal">
+          <h3>Error</h3>
+          <p>${errorMessage.value}</p>
+          <div class="modal-actions">
+            <button
+              onClick=${function () {
+                errorMessage.value = '';
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function App() {
     return html`
-      <div class="app-shell">
-        <div class="tree-pane"><${Tree} /></div>
-        <div class="detail-pane"><${Detail} /></div>
+      <div class="app-root">
+        <${Toolbar} />
+        <div class="app-shell">
+          <div class="tree-pane"><${Tree} /></div>
+          <div class="detail-pane"><${Detail} /></div>
+        </div>
+        <${SaveAsModal} />
+        <${UnsavedChangesModal} />
+        <${ErrorModal} />
       </div>
     `;
   }
@@ -581,10 +846,48 @@
     preact.render(html`<${App} />`, global.document.getElementById('app'));
   }
 
+  function handleKeydown(e) {
+    var ctrlOrCmd = e.ctrlKey || e.metaKey;
+    if (!ctrlOrCmd) {
+      return;
+    }
+    var key = e.key.toLowerCase();
+    if (key === 's') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        doSaveAs();
+      } else {
+        doSave();
+      }
+    } else if (key === 'o') {
+      e.preventDefault();
+      triggerOpenFilePicker();
+    } else if (key === 'n') {
+      e.preventDefault();
+      doNew();
+    }
+  }
+
+  global.document.addEventListener('keydown', handleKeydown);
+
+  global.addEventListener('beforeunload', function (e) {
+    if (Store.dirty.value) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+
   signalsCore.effect(function () {
     Store.document.value;
     Store.selectedKey.value;
+    Store.filename.value;
+    Store.dirty.value;
     expandedFolders.value;
+    statusMessage.value;
+    errorMessage.value;
+    saveAsPrompt.value;
+    unsavedChangesPrompt.value;
     rerender();
   });
 })(typeof window !== 'undefined' ? window : globalThis);
