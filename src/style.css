@@ -122,3 +122,33 @@ td.field-value select {
 .delete-button {
   margin-top: 16px;
 }
+
+.port-table {
+  border-collapse: collapse;
+  margin-top: 12px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.port-table th,
+.port-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.port-row {
+  cursor: pointer;
+}
+
+.port-row:hover {
+  background: #f3f6ff;
+}
+
+.port-status-faulty {
+  color: firebrick;
+}
+
+.port-status-free {
+  color: seagreen;
+}

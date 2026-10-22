@@ -50,6 +50,7 @@
   var YES_NO = ['Yes', 'No'];
   var MAILBOX_TYPES = ['Shared Mailbox', 'Resource', 'Distribution List'];
   var MAILBOX_HOSTING = ['M365', 'Exchange', 'Other'];
+  var MANUAL_PORT_STATUSES = ['faulty'];
 
   var DEVICE_FIELDS = [
     { key: 'name', label: 'Device name', type: 'text' },
@@ -166,6 +167,16 @@
     return entity;
   }
 
+  function portStatus(device, portInfo) {
+    if (device) {
+      return 'occupied';
+    }
+    if (portInfo && portInfo.status === 'faulty') {
+      return 'faulty';
+    }
+    return 'free';
+  }
+
   function makeId() {
     return global.crypto.randomUUID().replace(/-/g, '').slice(0, 8);
   }
@@ -209,6 +220,7 @@
     YES_NO: YES_NO,
     MAILBOX_TYPES: MAILBOX_TYPES,
     MAILBOX_HOSTING: MAILBOX_HOSTING,
+    MANUAL_PORT_STATUSES: MANUAL_PORT_STATUSES,
     DEVICE_FIELDS: DEVICE_FIELDS,
     USER_FIELDS: USER_FIELDS,
     NETWORK_FIELDS: NETWORK_FIELDS,
@@ -223,5 +235,6 @@
     emptyCustomer: emptyCustomer,
     emptyEntity: emptyEntity,
     makeId: makeId,
+    portStatus: portStatus,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

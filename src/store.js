@@ -70,8 +70,66 @@
     return addEntity('devices');
   }
 
+  function clearDeviceFromPort(networkId, port, exceptDeviceId) {
+    document.value.devices.forEach(function (device) {
+      if (device.id !== exceptDeviceId && device.switch === networkId && device.port === String(port)) {
+        updateEntity('devices', device.id, { switch: '', port: '' });
+      }
+    });
+  }
+
   function updateDevice(id, patch) {
     updateEntity('devices', id, patch);
+  }
+
+  function getPortInfo(networkId, port) {
+    var all = document.value.portInfo[networkId];
+    return (all && all[String(port)]) || {};
+  }
+
+  function setPortInfo(networkId, port, patch) {
+    var networkPortInfo = Object.assign({}, document.value.portInfo[networkId]);
+    networkPortInfo[String(port)] = Object.assign({}, networkPortInfo[String(port)], patch);
+    var portInfoPatch = Object.assign({}, document.value.portInfo);
+    portInfoPatch[networkId] = networkPortInfo;
+    document.value = Object.assign({}, document.value, { portInfo: portInfoPatch });
+    bumpRevision();
+  }
+
+  function assignDevicePort(networkId, port, deviceId) {
+    clearDeviceFromPort(networkId, port, deviceId || null);
+    if (deviceId) {
+      updateEntity('devices', deviceId, { switch: networkId, port: String(port) });
+    }
+  }
+
+  function getPortsForNetwork(networkId) {
+    var devicesOnNetwork = document.value.devices.filter(function (device) {
+      return device.switch === networkId;
+    });
+    var maxPortFromDevices = devicesOnNetwork.reduce(function (max, device) {
+      return Math.max(max, parseInt(device.port, 10) || 0);
+    }, 0);
+    var network = document.value.network.find(function (n) {
+      return n.id === networkId;
+    });
+    var portCount = Math.max(parseInt((network && network.portCount) || '0', 10) || 0, maxPortFromDevices);
+
+    var rows = [];
+    for (var p = 1; p <= portCount; p++) {
+      rows.push(getPortRow(networkId, p, devicesOnNetwork));
+    }
+    return rows;
+  }
+
+  function getPortRow(networkId, port, devicesOnNetwork) {
+    var candidates = devicesOnNetwork || document.value.devices.filter(function (device) {
+      return device.switch === networkId;
+    });
+    var device = candidates.find(function (d) {
+      return d.port === String(port);
+    });
+    return { port: port, device: device || null, info: getPortInfo(networkId, port) };
   }
 
   function deleteDevice(id) {
@@ -122,5 +180,10 @@
     addMonitorForDevice: addMonitorForDevice,
     toggleAssociation: toggleAssociation,
     addEntityAssociated: addEntityAssociated,
+    getPortInfo: getPortInfo,
+    setPortInfo: setPortInfo,
+    assignDevicePort: assignDevicePort,
+    getPortsForNetwork: getPortsForNetwork,
+    getPortRow: getPortRow,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

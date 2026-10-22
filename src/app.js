@@ -201,6 +201,22 @@
     `;
   }
 
+  function PORT_STATUS_LABEL(status) {
+    return status === 'faulty' ? 'Faulty' : status === 'occupied' ? 'Occupied' : 'Free';
+  }
+
+  function DeviceSwitchPort(props) {
+    var device = props.device;
+    var jack = device.switch ? Store.getPortInfo(device.switch, device.port).jack || '' : '';
+
+    return html`
+      <tr>
+        <td class="field-label">Jack</td>
+        <td class="field-value"><input type="text" value=${jack} readonly /></td>
+      </tr>
+    `;
+  }
+
   function DeviceMonitors(props) {
     var device = props.device;
     var monitors = Store.document.value.monitors.filter(function (monitor) {
@@ -331,12 +347,136 @@
     `;
   }
 
+  function NetworkPorts(props) {
+    var network = props.network;
+    var rows = Store.getPortsForNetwork(network.id);
+
+    return html`
+      <div class="detail-grid">
+        <h2>${network.name || '(unnamed)'} — Ports</h2>
+        <table class="port-table">
+          <thead>
+            <tr>
+              <th>Port</th>
+              <th>Device</th>
+              <th>Status</th>
+              <th>Jack</th>
+              <th>Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(function (row) {
+              var status = Schema.portStatus(row.device, row.info);
+              return html`
+                <tr
+                  class=${'port-row port-status-' + status}
+                  onDblClick=${function () {
+                    Store.selectedKey.value = 'network:' + network.id + '/ports/' + row.port;
+                  }}
+                >
+                  <td>${row.port}</td>
+                  <td>${row.device ? entityLabel('devices', row.device) : ''}</td>
+                  <td>${PORT_STATUS_LABEL(status)}</td>
+                  <td>${row.info.jack || ''}</td>
+                  <td>${row.info.remark || ''}</td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function PortDetail(props) {
+    var network = props.network;
+    var port = props.port;
+    var row = Store.getPortRow(network.id, port);
+    var deviceOptions = refOptions('devices');
+
+    return html`
+      <div class="detail-grid">
+        <h2>${network.name || '(unnamed)'} — Port ${port}</h2>
+        <table class="field-grid">
+          <tbody>
+            <tr>
+              <td class="field-label">Device</td>
+              <td class="field-value">
+                <select
+                  onChange=${function (e) {
+                    Store.assignDevicePort(network.id, port, e.target.value);
+                  }}
+                >
+                  <option value="">—</option>
+                  ${deviceOptions.map(
+                    (option) =>
+                      html`<option value=${option.value} selected=${row.device && row.device.id === option.value}>
+                        ${option.label}
+                      </option>`
+                  )}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="field-label">Status</td>
+              <td class="field-value">
+                <select
+                  onChange=${function (e) {
+                    Store.setPortInfo(network.id, port, { status: e.target.value });
+                  }}
+                >
+                  <option value="" selected=${!row.info.status}>—</option>
+                  ${Schema.MANUAL_PORT_STATUSES.map(
+                    (option) =>
+                      html`<option value=${option} selected=${row.info.status === option}>${option}</option>`
+                  )}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="field-label">Jack</td>
+              <td class="field-value">
+                <input
+                  type="text"
+                  value=${row.info.jack || ''}
+                  onInput=${function (e) {
+                    Store.setPortInfo(network.id, port, { jack: e.target.value });
+                  }}
+                />
+              </td>
+            </tr>
+            <tr>
+              <td class="field-label">Remark</td>
+              <td class="field-value">
+                <input
+                  type="text"
+                  value=${row.info.remark || ''}
+                  onInput=${function (e) {
+                    Store.setPortInfo(network.id, port, { remark: e.target.value });
+                  }}
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function EntityDetail(props) {
     var collectionKey = props.collectionKey;
     var entity = props.entity;
     var fields = Schema.COLLECTION_FIELDS[collectionKey];
 
     function onChange(fieldKey, value) {
+      if (collectionKey === 'devices' && (fieldKey === 'switch' || fieldKey === 'port')) {
+        var networkId = fieldKey === 'switch' ? value : entity.switch;
+        var port = fieldKey === 'port' ? value : entity.port;
+        if (networkId && port) {
+          Store.assignDevicePort(networkId, port, entity.id);
+          return;
+        }
+      }
       var patch = {};
       patch[fieldKey] = value;
       Store.updateEntity(collectionKey, entity.id, patch);
@@ -361,9 +501,21 @@
                 </tr>
               `
             )}
+            ${collectionKey === 'devices' ? html`<${DeviceSwitchPort} device=${entity} />` : ''}
           </tbody>
         </table>
         ${collectionKey === 'devices' ? html`<${DeviceMonitors} device=${entity} />` : ''}
+        ${collectionKey === 'network' && parseInt(entity.portCount, 10) > 0
+          ? html`
+              <button
+                onClick=${function () {
+                  Store.selectedKey.value = 'network:' + entity.id + '/ports';
+                }}
+              >
+                Ports
+              </button>
+            `
+          : ''}
         <${EntityAssociations} collectionKey=${collectionKey} entity=${entity} />
         <button
           class="delete-button"
@@ -381,6 +533,18 @@
     var selected = Store.selectedKey.value;
     if (selected === 'customer') {
       return html`<${CustomerGrid} />`;
+    }
+
+    var portsMatch = /^network:([^/]+)\/ports(?:\/(\d+))?$/.exec(selected);
+    if (portsMatch) {
+      var network = Store.document.value.network.find(function (n) {
+        return n.id === portsMatch[1];
+      });
+      if (network) {
+        return portsMatch[2]
+          ? html`<${PortDetail} network=${network} port=${parseInt(portsMatch[2], 10)} />`
+          : html`<${NetworkPorts} network=${network} />`;
+      }
     }
 
     var collectionKey = Schema.ALL_COLLECTION_KEYS.find(function (key) {
