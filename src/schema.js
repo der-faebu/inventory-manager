@@ -145,10 +145,23 @@
     monitors: MONITOR_FIELDS,
   };
 
+  // Each entry: owner holds an array field (fieldKey) of ids into the target collection.
+  var ASSOCIATIONS = [
+    { ownerCollection: 'devices', fieldKey: 'users', targetCollection: 'users', label: 'Users' },
+    { ownerCollection: 'devices', fieldKey: 'apps', targetCollection: 'applications', label: 'Applications' },
+    { ownerCollection: 'devices', fieldKey: 'lizenzen', targetCollection: 'licenses', label: 'Licenses' },
+    { ownerCollection: 'users', fieldKey: 'lizenzen', targetCollection: 'licenses', label: 'Licenses' },
+  ];
+
   function emptyEntity(collectionKey) {
     var entity = {};
     COLLECTION_FIELDS[collectionKey].forEach(function (field) {
       entity[field.key] = '';
+    });
+    ASSOCIATIONS.forEach(function (association) {
+      if (association.ownerCollection === collectionKey) {
+        entity[association.fieldKey] = [];
+      }
     });
     return entity;
   }
@@ -205,6 +218,7 @@
     MAILBOX_FIELDS: MAILBOX_FIELDS,
     MONITOR_FIELDS: MONITOR_FIELDS,
     COLLECTION_FIELDS: COLLECTION_FIELDS,
+    ASSOCIATIONS: ASSOCIATIONS,
     emptyDocument: emptyDocument,
     emptyCustomer: emptyCustomer,
     emptyEntity: emptyEntity,

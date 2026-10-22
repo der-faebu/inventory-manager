@@ -236,6 +236,101 @@
     `;
   }
 
+  function AssociationChecklist(props) {
+    var association = props.association;
+    var owner = props.owner;
+    var targetEntities = Store.document.value[association.targetCollection];
+    var assignedIds = owner[association.fieldKey] || [];
+
+    return html`
+      <div class="association-checklist">
+        <h3>${association.label}</h3>
+        <button
+          onClick=${function () {
+            var entity = Store.addEntityAssociated(association, owner.id);
+            Store.selectedKey.value = association.targetCollection + ':' + entity.id;
+          }}
+        >
+          + New
+        </button>
+        <ul class="checklist">
+          ${targetEntities.map(
+            (entity) => html`
+              <li class="checklist-item">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked=${assignedIds.includes(entity.id)}
+                    onChange=${function () {
+                      Store.toggleAssociation(association, owner.id, entity.id);
+                    }}
+                  />
+                  ${entityLabel(association.targetCollection, entity)}
+                </label>
+              </li>
+            `
+          )}
+        </ul>
+      </div>
+    `;
+  }
+
+  function ReverseAssociationList(props) {
+    var association = props.association;
+    var target = props.target;
+    var owners = Store.document.value[association.ownerCollection];
+    var ownerInfo = Schema.COLLECTIONS[association.ownerCollection];
+
+    return html`
+      <div class="association-checklist">
+        <h3>${ownerInfo.many}</h3>
+        <ul class="checklist">
+          ${owners.map(
+            (owner) => html`
+              <li class="checklist-item">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked=${(owner[association.fieldKey] || []).includes(target.id)}
+                    onChange=${function () {
+                      Store.toggleAssociation(association, owner.id, target.id);
+                    }}
+                  />
+                  ${entityLabel(association.ownerCollection, owner)}
+                </label>
+              </li>
+            `
+          )}
+        </ul>
+      </div>
+    `;
+  }
+
+  function EntityAssociations(props) {
+    var collectionKey = props.collectionKey;
+    var entity = props.entity;
+
+    var forward = Schema.ASSOCIATIONS.filter(function (association) {
+      return association.ownerCollection === collectionKey;
+    });
+    var reverse = Schema.ASSOCIATIONS.filter(function (association) {
+      return association.targetCollection === collectionKey;
+    });
+
+    if (forward.length === 0 && reverse.length === 0) {
+      return '';
+    }
+
+    return html`
+      <div class="entity-associations">
+        ${forward.map((association) => html`<${AssociationChecklist} association=${association} owner=${entity} />`)}
+        ${reverse.map(
+          (association) => html`<${ReverseAssociationList} association=${association} target=${entity} />`
+        )}
+      </div>
+    `;
+  }
+
   function EntityDetail(props) {
     var collectionKey = props.collectionKey;
     var entity = props.entity;
@@ -269,6 +364,7 @@
           </tbody>
         </table>
         ${collectionKey === 'devices' ? html`<${DeviceMonitors} device=${entity} />` : ''}
+        <${EntityAssociations} collectionKey=${collectionKey} entity=${entity} />
         <button
           class="delete-button"
           onClick=${function () {

@@ -82,6 +82,27 @@
     return addEntity('monitors', { device: deviceId });
   }
 
+  function toggleAssociation(association, ownerId, targetId) {
+    var owner = document.value[association.ownerCollection].find(function (entity) {
+      return entity.id === ownerId;
+    });
+    var current = owner[association.fieldKey] || [];
+    var next = current.includes(targetId)
+      ? current.filter(function (id) {
+          return id !== targetId;
+        })
+      : current.concat([targetId]);
+    var patch = {};
+    patch[association.fieldKey] = next;
+    updateEntity(association.ownerCollection, ownerId, patch);
+  }
+
+  function addEntityAssociated(association, ownerId, overrides) {
+    var entity = addEntity(association.targetCollection, overrides);
+    toggleAssociation(association, ownerId, entity.id);
+    return entity;
+  }
+
   global.Store = {
     document: document,
     revision: revision,
@@ -99,5 +120,7 @@
     updateDevice: updateDevice,
     deleteDevice: deleteDevice,
     addMonitorForDevice: addMonitorForDevice,
+    toggleAssociation: toggleAssociation,
+    addEntityAssociated: addEntityAssociated,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
