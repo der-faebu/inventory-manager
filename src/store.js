@@ -36,6 +36,36 @@
     bumpRevision();
   }
 
+  function addDevice() {
+    var device = Object.assign({ id: Schema.makeId() }, Schema.emptyDevice());
+    document.value = Object.assign({}, document.value, {
+      devices: document.value.devices.concat([device]),
+    });
+    bumpRevision();
+    return device;
+  }
+
+  function updateDevice(id, patch) {
+    document.value = Object.assign({}, document.value, {
+      devices: document.value.devices.map(function (device) {
+        return device.id === id ? Object.assign({}, device, patch) : device;
+      }),
+    });
+    bumpRevision();
+  }
+
+  function deleteDevice(id) {
+    document.value = Object.assign({}, document.value, {
+      devices: document.value.devices.filter(function (device) {
+        return device.id !== id;
+      }),
+    });
+    if (selectedKey.value === 'devices:' + id) {
+      selectedKey.value = 'devices';
+    }
+    bumpRevision();
+  }
+
   global.Store = {
     document: document,
     revision: revision,
@@ -46,5 +76,8 @@
     markSaved: markSaved,
     resetDocument: resetDocument,
     updateCustomer: updateCustomer,
+    addDevice: addDevice,
+    updateDevice: updateDevice,
+    deleteDevice: deleteDevice,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

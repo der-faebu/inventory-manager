@@ -44,6 +44,38 @@
 
   var FORMAT = 'inventory-manager-1';
 
+  var DEVICE_TYPES = ['NUC', 'Laptop', 'PC', 'Thin Client', 'Server', 'Printer', 'Other'];
+  var CONDITION = ['good', 'fair', 'replace'];
+
+  var DEVICE_FIELDS = [
+    { key: 'name', label: 'Device name', type: 'text' },
+    { key: 'type', label: 'Type', type: 'select', options: DEVICE_TYPES },
+    { key: 'model', label: 'Manufacturer / Model', type: 'text' },
+    { key: 'serialNumber', label: 'Serial number', type: 'text' },
+    { key: 'ip', label: 'IP address', type: 'text' },
+    { key: 'mac', label: 'MAC address', type: 'text' },
+    { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
+    { key: 'room', label: 'Room', type: 'text' },
+    { key: 'deliveryDate', label: 'Delivery date (DD.MM.YYYY)', type: 'text' },
+    { key: 'warrantyUntil', label: 'Warranty until (DD.MM.YYYY)', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: CONDITION },
+    { key: 'switch', label: 'Switch', type: 'ref', collection: 'network' },
+    { key: 'port', label: 'Switch port', type: 'text' },
+    { key: 'remark', label: 'Remark', type: 'text' },
+  ];
+
+  function emptyDevice() {
+    var device = {};
+    DEVICE_FIELDS.forEach(function (field) {
+      device[field.key] = '';
+    });
+    return device;
+  }
+
+  function makeId() {
+    return global.crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  }
+
   function emptyCustomer() {
     return {
       name: '',
@@ -77,7 +109,12 @@
     TREE_ORDER: TREE_ORDER,
     COLLECTIONS: COLLECTIONS,
     CUSTOMER_FIELDS: CUSTOMER_FIELDS,
+    DEVICE_TYPES: DEVICE_TYPES,
+    CONDITION: CONDITION,
+    DEVICE_FIELDS: DEVICE_FIELDS,
     emptyDocument: emptyDocument,
     emptyCustomer: emptyCustomer,
+    emptyDevice: emptyDevice,
+    makeId: makeId,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
