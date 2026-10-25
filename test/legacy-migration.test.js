@@ -123,7 +123,10 @@ test('migrate maps device fields, enums, and associations', () => {
   assert.equal(device.ip, '10.0.0.1');
   assert.equal(device.mac, 'AA:BB');
   assert.equal(device.location, 'loc1');
-  assert.equal(device.room, 'R1');
+  const room = result.document.rooms.find((r) => r.id === device.room);
+  assert.ok(room, 'migrated device.room should reference a synthesized room entity');
+  assert.equal(room.name, 'R1');
+  assert.equal(room.location, 'loc1');
   assert.equal(device.deliveryDate, '01.01.2020');
   assert.equal(device.warrantyUntil, '01.01.2023');
   assert.equal(device.condition, 'good');

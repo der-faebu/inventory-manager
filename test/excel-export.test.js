@@ -75,6 +75,7 @@ test('buildWorkbook produces sheets in the required order', () => {
     'Licenses',
     'Monitors',
     'Locations',
+    'Rooms',
     'Mailboxes',
     'Ports',
   ]);
@@ -190,5 +191,5 @@ test('buildWorkbook writes to a binary array and reads back with the same sheets
 test('buildWorkbook handles an empty document without throwing', () => {
   const { ExcelExport, Schema } = load();
   const workbook = ExcelExport.buildWorkbook(Schema.emptyDocument());
-  assert.deepEqual(workbook.SheetNames.length, 11);
+  assert.deepEqual(workbook.SheetNames.length, 12);
 });

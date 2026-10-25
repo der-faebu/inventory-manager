@@ -22,7 +22,7 @@
 
   var autosaved = loadAutosave();
 
-  var document = signal(autosaved ? autosaved.document : Schema.emptyDocument());
+  var document = signal(autosaved ? Schema.normalizeDocument(autosaved.document) : Schema.emptyDocument());
   var revision = signal(autosaved ? 1 : 0);
   var lastSavedRevision = signal(0);
   var dirty = computed(function () {
@@ -65,7 +65,7 @@
   }
 
   function loadDocument(doc, loadedFilename) {
-    document.value = doc;
+    document.value = Schema.normalizeDocument(doc);
     revision.value = 0;
     lastSavedRevision.value = 0;
     selectedKey.value = 'customer';

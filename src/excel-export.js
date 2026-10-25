@@ -14,6 +14,7 @@
     licenses: 'Licenses',
     monitors: 'Monitors',
     locations: 'Locations',
+    rooms: 'Rooms',
     mailboxes: 'Mailboxes',
     ports: 'Ports',
   };
@@ -27,6 +28,7 @@
     ['Licenses', 'Each license and which users/devices it is assigned to.'],
     ['Monitors', 'All monitors and which device they are connected to.'],
     ['Locations', 'Locations with address and the devices there.'],
+    ['Rooms', 'Rooms, grouped by location.'],
     ['Mailboxes', 'Shared mailboxes, resources, and distribution lists.'],
     ['Ports', 'Each switch port: which device, status.'],
   ];
@@ -212,7 +214,7 @@
             entity.model,
             entity.serialNumber ? 'SN ' + entity.serialNumber : '',
             refLabel(doc, 'locations', entity.location),
-            entity.room,
+            refLabel(doc, 'rooms', entity.room),
             entity.condition,
           ]);
           addRow(1, label, summary);
@@ -244,6 +246,8 @@
         } else if (collectionKey === 'locations') {
           addRow(1, label, entity.address);
           addRow(2, 'Devices', devicesAtLocation(doc, entity.id));
+        } else if (collectionKey === 'rooms') {
+          addRow(1, label, refLabel(doc, 'locations', entity.location));
         } else if (collectionKey === 'mailboxes') {
           addRow(1, label, join([entity.type, entity.owner, entity.hosting]));
         }
@@ -288,7 +292,7 @@
         device.model,
         device.serialNumber,
         refLabel(doc, 'locations', device.location),
-        device.room,
+        refLabel(doc, 'rooms', device.room),
         namesOf(doc, 'users', device.users),
         namesOf(doc, 'applications', device.apps),
         namesOf(doc, 'licenses', device.lizenzen),
@@ -420,6 +424,14 @@
     return buildDataSheet(header, rows, [20, 24, 10, 28, 20, 30]);
   }
 
+  function buildRoomsSheet(doc) {
+    var header = ['Name', 'Location'];
+    var rows = doc.rooms.map(function (room) {
+      return [Schema.entityLabel('rooms', room), refLabel(doc, 'locations', room.location)];
+    });
+    return buildDataSheet(header, rows, [20, 20]);
+  }
+
   function buildMailboxesSheet(doc) {
     var header = ['Email address', 'Type', 'Owner', 'Hosting'];
     var rows = doc.mailboxes.map(function (mailbox) {
@@ -466,6 +478,7 @@
     XLSX.utils.book_append_sheet(workbook, buildLicensesSheet(doc), SHEET_NAMES.licenses);
     XLSX.utils.book_append_sheet(workbook, buildMonitorsSheet(doc), SHEET_NAMES.monitors);
     XLSX.utils.book_append_sheet(workbook, buildLocationsSheet(doc), SHEET_NAMES.locations);
+    XLSX.utils.book_append_sheet(workbook, buildRoomsSheet(doc), SHEET_NAMES.rooms);
     XLSX.utils.book_append_sheet(workbook, buildMailboxesSheet(doc), SHEET_NAMES.mailboxes);
     XLSX.utils.book_append_sheet(workbook, buildPortsSheet(doc), SHEET_NAMES.ports);
     return workbook;

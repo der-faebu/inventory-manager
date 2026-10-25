@@ -23,14 +23,14 @@ test('emptyDocument has the full root signal shape', () => {
     assert.ok(Array.isArray(doc[key]), `${key} should be an array`);
     assert.equal(doc[key].length, 0);
   }
-  assert.equal(Schema.ALL_COLLECTION_KEYS.length, 8);
+  assert.equal(Schema.ALL_COLLECTION_KEYS.length, 9);
 });
 
-test('monitors is hidden, the other 7 collections are visible in tree order', () => {
+test('monitors is hidden, the other 8 collections are visible in tree order', () => {
   const { Schema } = freshGlobals();
 
   assert.equal(Schema.COLLECTIONS.monitors.hidden, true);
-  assert.equal(Schema.TREE_ORDER.length, 7);
+  assert.equal(Schema.TREE_ORDER.length, 8);
   assert.ok(!Schema.TREE_ORDER.includes('monitors'));
   for (const key of Schema.TREE_ORDER) {
     assert.equal(Schema.COLLECTIONS[key].hidden, false);

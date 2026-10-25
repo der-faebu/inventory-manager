@@ -8,6 +8,7 @@
     'applications',
     'licenses',
     'locations',
+    'rooms',
     'mailboxes',
   ];
 
@@ -18,6 +19,7 @@
     applications: { one: 'Application', many: 'Applications', icon: 'app', hidden: false },
     licenses: { one: 'License', many: 'Licenses', icon: 'lic', hidden: false },
     locations: { one: 'Location', many: 'Locations', icon: 'site', hidden: false },
+    rooms: { one: 'Room', many: 'Rooms', icon: 'room', hidden: false },
     mailboxes: { one: 'Mailbox', many: 'Mailboxes', icon: 'mail', hidden: false },
     monitors: { one: 'Monitor', many: 'Monitors', icon: 'mon', hidden: true },
   };
@@ -29,6 +31,7 @@
     'applications',
     'licenses',
     'locations',
+    'rooms',
     'mailboxes',
     'monitors',
   ];
@@ -60,9 +63,9 @@
     { key: 'ip', label: 'IP address', type: 'text' },
     { key: 'mac', label: 'MAC address', type: 'text' },
     { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
-    { key: 'room', label: 'Room', type: 'text' },
-    { key: 'deliveryDate', label: 'Delivery date (DD.MM.YYYY)', type: 'text' },
-    { key: 'warrantyUntil', label: 'Warranty until (DD.MM.YYYY)', type: 'text' },
+    { key: 'room', label: 'Room', type: 'ref', collection: 'rooms' },
+    { key: 'deliveryDate', label: 'Delivery date (YYYY.MM.DD)', type: 'text' },
+    { key: 'warrantyUntil', label: 'Warranty until (YYYY.MM.DD)', type: 'text' },
     { key: 'condition', label: 'Condition', type: 'select', options: CONDITION },
     { key: 'switch', label: 'Switch', type: 'ref', collection: 'network' },
     { key: 'port', label: 'Switch port', type: 'text' },
@@ -120,6 +123,11 @@
     { key: 'serverRoom', label: 'Server room / Rack', type: 'text' },
   ];
 
+  var ROOM_FIELDS = [
+    { key: 'name', label: 'Name', type: 'text' },
+    { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
+  ];
+
   var MAILBOX_FIELDS = [
     { key: 'address', label: 'Email address', type: 'text' },
     { key: 'type', label: 'Type', type: 'select', options: MAILBOX_TYPES },
@@ -142,6 +150,7 @@
     applications: APPLICATION_FIELDS,
     licenses: LICENSE_FIELDS,
     locations: LOCATION_FIELDS,
+    rooms: ROOM_FIELDS,
     mailboxes: MAILBOX_FIELDS,
     monitors: MONITOR_FIELDS,
   };
@@ -221,9 +230,21 @@
       applications: [],
       licenses: [],
       locations: [],
+      rooms: [],
       mailboxes: [],
       monitors: [],
     };
+  }
+
+  // Backfills any collection arrays missing from a document (e.g. one saved before a
+  // collection was added to the schema), so older saved/autosaved documents keep loading.
+  function normalizeDocument(doc) {
+    ALL_COLLECTION_KEYS.forEach(function (key) {
+      if (!Array.isArray(doc[key])) {
+        doc[key] = [];
+      }
+    });
+    return doc;
   }
 
   global.Schema = {
@@ -245,6 +266,7 @@
     APPLICATION_FIELDS: APPLICATION_FIELDS,
     LICENSE_FIELDS: LICENSE_FIELDS,
     LOCATION_FIELDS: LOCATION_FIELDS,
+    ROOM_FIELDS: ROOM_FIELDS,
     MAILBOX_FIELDS: MAILBOX_FIELDS,
     MONITOR_FIELDS: MONITOR_FIELDS,
     COLLECTION_FIELDS: COLLECTION_FIELDS,
@@ -252,6 +274,7 @@
     emptyDocument: emptyDocument,
     emptyCustomer: emptyCustomer,
     emptyEntity: emptyEntity,
+    normalizeDocument: normalizeDocument,
     makeId: makeId,
     portStatus: portStatus,
     entityLabel: entityLabel,
