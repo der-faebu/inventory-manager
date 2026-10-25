@@ -3,17 +3,47 @@
 
   var signal = global.preactSignalsCore.signal;
   var computed = global.preactSignalsCore.computed;
+  var effect = global.preactSignalsCore.effect;
   var Schema = global.Schema;
 
-  var document = signal(Schema.emptyDocument());
-  var revision = signal(0);
+  var AUTOSAVE_KEY = 'inventory-manager.autosave';
+
+  function loadAutosave() {
+    try {
+      var stored = JSON.parse(global.localStorage.getItem(AUTOSAVE_KEY));
+      if (stored && stored.document) {
+        return stored;
+      }
+    } catch (e) {
+      // ignore corrupt autosave
+    }
+    return null;
+  }
+
+  var autosaved = loadAutosave();
+
+  var document = signal(autosaved ? autosaved.document : Schema.emptyDocument());
+  var revision = signal(autosaved ? 1 : 0);
   var lastSavedRevision = signal(0);
   var dirty = computed(function () {
     return revision.value !== lastSavedRevision.value;
   });
 
-  var selectedKey = signal('customer');
-  var filename = signal(null);
+  var selectedKey = signal(autosaved ? autosaved.selectedKey || 'customer' : 'customer');
+  var filename = signal(autosaved ? autosaved.filename || null : null);
+
+  effect(function () {
+    var snapshot = {
+      document: document.value,
+      selectedKey: selectedKey.value,
+      filename: filename.value,
+    };
+    try {
+      global.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(snapshot));
+    } catch (e) {
+      // storage unavailable or quota exceeded; autosave is best-effort
+    }
+  });
 
   function bumpRevision() {
     revision.value = revision.value + 1;
