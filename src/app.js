@@ -383,8 +383,28 @@
       `;
     }
 
+    var error = Schema.fieldError(field, value);
+
+    if (field.type === 'date') {
+      return html`
+        <input
+          type="date"
+          class=${error ? 'field-invalid' : ''}
+          value=${Schema.dateToInputValue(value)}
+          onInput=${(e) => onChange(Schema.dateFromInputValue(e.target.value))}
+        />
+        ${error ? html`<div class="field-error">${error}</div>` : ''}
+      `;
+    }
+
     return html`
-      <input type="text" value=${value || ''} onInput=${(e) => onChange(e.target.value)} />
+      <input
+        type="text"
+        class=${error ? 'field-invalid' : ''}
+        value=${value || ''}
+        onInput=${(e) => onChange(e.target.value)}
+      />
+      ${error ? html`<div class="field-error">${error}</div>` : ''}
     `;
   }
 

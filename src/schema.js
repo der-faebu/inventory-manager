@@ -60,12 +60,12 @@
     { key: 'type', label: 'Type', type: 'select', options: DEVICE_TYPES },
     { key: 'model', label: 'Manufacturer / Model', type: 'text' },
     { key: 'serialNumber', label: 'Serial number', type: 'text' },
-    { key: 'ip', label: 'IP address', type: 'text' },
+    { key: 'ip', label: 'IP address', type: 'ip' },
     { key: 'mac', label: 'MAC address', type: 'text' },
     { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
     { key: 'room', label: 'Room', type: 'ref', collection: 'rooms' },
-    { key: 'deliveryDate', label: 'Delivery date (YYYY.MM.DD)', type: 'text' },
-    { key: 'warrantyUntil', label: 'Warranty until (YYYY.MM.DD)', type: 'text' },
+    { key: 'deliveryDate', label: 'Delivery date (YYYY.MM.DD)', type: 'date' },
+    { key: 'warrantyUntil', label: 'Warranty until (YYYY.MM.DD)', type: 'date' },
     { key: 'condition', label: 'Condition', type: 'select', options: CONDITION },
     { key: 'switch', label: 'Switch', type: 'ref', collection: 'network' },
     { key: 'port', label: 'Switch port', type: 'text' },
@@ -88,14 +88,14 @@
     { key: 'category', label: 'Category', type: 'select', options: NETWORK_CATEGORIES },
     { key: 'model', label: 'Manufacturer / Model', type: 'text' },
     { key: 'serialNumber', label: 'Serial number', type: 'text' },
-    { key: 'ip', label: 'IP address', type: 'text' },
+    { key: 'ip', label: 'IP address', type: 'ip' },
     { key: 'mac', label: 'MAC address', type: 'text' },
     { key: 'firmware', label: 'Firmware', type: 'text' },
     { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
     { key: 'rack', label: 'Room / Rack', type: 'text' },
     { key: 'portCount', label: 'Total ports', type: 'text' },
     { key: 'uplink', label: 'Uplink to', type: 'text' },
-    { key: 'supportUntil', label: 'Warranty / Support until', type: 'text' },
+    { key: 'supportUntil', label: 'Warranty / Support until (YYYY.MM.DD)', type: 'date' },
     { key: 'remark', label: 'Remark', type: 'text' },
   ];
 
@@ -194,6 +194,58 @@
     return '(unnamed)';
   }
 
+  var DATE_PATTERN = /^\d{4}\.\d{2}\.\d{2}$/;
+  var IP_PATTERN = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
+  function isValidDate(value) {
+    if (!DATE_PATTERN.test(value)) {
+      return false;
+    }
+    var parts = value.split('.');
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10);
+    var day = parseInt(parts[2], 10);
+    var date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  }
+
+  function isValidIp(value) {
+    var match = IP_PATTERN.exec(value);
+    if (!match) {
+      return false;
+    }
+    for (var i = 1; i <= 4; i++) {
+      if (parseInt(match[i], 10) > 255) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Converts a stored YYYY.MM.DD value to the YYYY-MM-DD an <input type="date"> expects.
+  function dateToInputValue(value) {
+    return isValidDate(value) ? value.replace(/\./g, '-') : '';
+  }
+
+  // Converts an <input type="date"> YYYY-MM-DD value back to the stored YYYY.MM.DD format.
+  function dateFromInputValue(value) {
+    return value ? value.replace(/-/g, '.') : '';
+  }
+
+  // Returns an error message for the field's value, or '' if valid/empty (fields are optional).
+  function fieldError(field, value) {
+    if (!value) {
+      return '';
+    }
+    if (field.type === 'date' && !isValidDate(value)) {
+      return 'Expected date format YYYY.MM.DD';
+    }
+    if (field.type === 'ip' && !isValidIp(value)) {
+      return 'Expected a valid IP address, e.g. 192.168.1.1';
+    }
+    return '';
+  }
+
   function portStatus(device, portInfo) {
     if (device) {
       return 'occupied';
@@ -276,6 +328,9 @@
     emptyEntity: emptyEntity,
     normalizeDocument: normalizeDocument,
     makeId: makeId,
+    fieldError: fieldError,
+    dateToInputValue: dateToInputValue,
+    dateFromInputValue: dateFromInputValue,
     portStatus: portStatus,
     entityLabel: entityLabel,
   };
