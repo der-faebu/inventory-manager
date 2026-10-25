@@ -10,6 +10,49 @@
   var ExcelExport = global.ExcelExport;
   var signalsCore = global.preactSignalsCore;
 
+  var THEME_STORAGE_KEY = 'inventory-manager.theme';
+  var THEME_PRESETS = [
+    { name: 'amber', h: 25 },
+    { name: 'teal', h: 175 },
+    { name: 'indigo', h: 235 },
+    { name: 'rose', h: 345 },
+    { name: 'olive', h: 95 },
+  ];
+
+  function loadThemePreference() {
+    try {
+      var stored = JSON.parse(global.localStorage.getItem(THEME_STORAGE_KEY));
+      return Object.assign({ hue: 25, mode: 'system' }, stored || {});
+    } catch (e) {
+      return { hue: 25, mode: 'system' };
+    }
+  }
+
+  var themePreference = signalsCore.signal(loadThemePreference());
+  var themePopoverOpen = signalsCore.signal(false);
+
+  function saveThemePreference(next) {
+    themePreference.value = next;
+    global.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(next));
+  }
+
+  function setThemeHue(hue) {
+    saveThemePreference(Object.assign({}, themePreference.value, { hue: Number(hue) }));
+  }
+
+  function setThemeMode(mode) {
+    saveThemePreference(Object.assign({}, themePreference.value, { mode: mode }));
+  }
+
+  function applyThemePreference() {
+    var pref = themePreference.value;
+    var root = global.document.documentElement;
+    root.style.setProperty('--accent-h', pref.hue);
+    var isDark =
+      pref.mode === 'dark' || (pref.mode === 'system' && global.matchMedia('(prefers-color-scheme: dark)').matches);
+    root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  }
+
   var expandedFolders = signalsCore.signal({});
   var statusMessage = signalsCore.signal('');
   var errorMessage = signalsCore.signal('');
@@ -745,6 +788,75 @@
     return html`<div class="detail-grid"><p>Nothing to show yet.</p></div>`;
   }
 
+  function ThemePicker() {
+    var pref = themePreference.value;
+    var isOpen = themePopoverOpen.value;
+
+    return html`
+      <div class="theme-control">
+        <button
+          class="theme-button"
+          title="Theme"
+          aria-label="Theme settings"
+          onClick=${function (e) {
+            e.stopPropagation();
+            themePopoverOpen.value = !themePopoverOpen.value;
+          }}
+        >
+          🎨
+        </button>
+        ${isOpen
+          ? html`
+              <div class="theme-popover" onClick=${(e) => e.stopPropagation()}>
+                <h4>Accent color</h4>
+                <div class="theme-swatch-row">
+                  ${THEME_PRESETS.map(
+                    (preset) => html`
+                      <button
+                        class=${'theme-swatch' + (pref.hue === preset.h ? ' active' : '')}
+                        title=${preset.name}
+                        style=${'background: hsl(' + preset.h + ' 68% 48%)'}
+                        onClick=${function () {
+                          setThemeHue(preset.h);
+                        }}
+                      ></button>
+                    `
+                  )}
+                </div>
+                <div class="theme-custom-hue-row">
+                  <span style="font-size: 12px">custom</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value=${pref.hue}
+                    onInput=${function (e) {
+                      setThemeHue(e.target.value);
+                    }}
+                  />
+                </div>
+                <h4>Appearance</h4>
+                <div class="theme-segmented">
+                  ${['system', 'light', 'dark'].map(
+                    (mode) => html`
+                      <button
+                        class=${pref.mode === mode ? 'active' : ''}
+                        onClick=${function () {
+                          setThemeMode(mode);
+                        }}
+                      >
+                        ${mode.charAt(0).toUpperCase() + mode.slice(1)}
+                      </button>
+                    `
+                  )}
+                </div>
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
   function Toolbar() {
     return html`
       <div class="toolbar">
@@ -764,6 +876,24 @@
         />
         <span class="toolbar-filename">${Store.filename.value || '(unsaved)'}${Store.dirty.value ? ' •' : ''}</span>
         <span class="toolbar-status">${statusMessage.value}</span>
+        <div class="toolbar-spacer"></div>
+        <${ThemePicker} />
+      </div>
+    `;
+  }
+
+  function Modal(props) {
+    return html`
+      <div class="modal-overlay">
+        <div class="modal">
+          <h3>${props.title}</h3>
+          ${props.children}
+          <div class="modal-actions">
+            ${props.actions.map(
+              (action) => html`<button onClick=${action.onClick}>${action.label}</button>`
+            )}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -775,35 +905,22 @@
     }
     var nameValue = prompt.defaultName;
     return html`
-      <div class="modal-overlay">
-        <div class="modal">
-          <h3>Save As</h3>
-          <input
-            type="text"
-            class="save-as-input"
-            value=${nameValue}
-            onInput=${function (e) {
-              saveAsPrompt.value = Object.assign({}, prompt, { defaultName: e.target.value });
-            }}
-          />
-          <div class="modal-actions">
-            <button
-              onClick=${function () {
-                confirmSaveAs(nameValue);
-              }}
-            >
-              Save
-            </button>
-            <button
-              onClick=${function () {
-                saveAsPrompt.value = null;
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
+      <${Modal}
+        title="Save As"
+        actions=${[
+          { label: 'Save', onClick: () => confirmSaveAs(nameValue) },
+          { label: 'Cancel', onClick: () => (saveAsPrompt.value = null) },
+        ]}
+      >
+        <input
+          type="text"
+          class="save-as-input"
+          value=${nameValue}
+          onInput=${function (e) {
+            saveAsPrompt.value = Object.assign({}, prompt, { defaultName: e.target.value });
+          }}
+        />
+      </${Modal}>
     `;
   }
 
@@ -813,35 +930,16 @@
       return '';
     }
     return html`
-      <div class="modal-overlay">
-        <div class="modal">
-          <h3>Unsaved changes</h3>
-          <p>You have unsaved changes. Do you want to save before continuing?</p>
-          <div class="modal-actions">
-            <button
-              onClick=${function () {
-                resolveUnsavedChanges('save');
-              }}
-            >
-              Save
-            </button>
-            <button
-              onClick=${function () {
-                resolveUnsavedChanges('discard');
-              }}
-            >
-              Discard
-            </button>
-            <button
-              onClick=${function () {
-                resolveUnsavedChanges('cancel');
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
+      <${Modal}
+        title="Unsaved changes"
+        actions=${[
+          { label: 'Save', onClick: () => resolveUnsavedChanges('save') },
+          { label: 'Discard', onClick: () => resolveUnsavedChanges('discard') },
+          { label: 'Cancel', onClick: () => resolveUnsavedChanges('cancel') },
+        ]}
+      >
+        <p>You have unsaved changes. Do you want to save before continuing?</p>
+      </${Modal}>
     `;
   }
 
@@ -850,21 +948,9 @@
       return '';
     }
     return html`
-      <div class="modal-overlay">
-        <div class="modal">
-          <h3>Error</h3>
-          <p>${errorMessage.value}</p>
-          <div class="modal-actions">
-            <button
-              onClick=${function () {
-                errorMessage.value = '';
-              }}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      </div>
+      <${Modal} title="Error" actions=${[{ label: 'OK', onClick: () => (errorMessage.value = '') }]}>
+        <p>${errorMessage.value}</p>
+      </${Modal}>
     `;
   }
 
@@ -874,24 +960,15 @@
       return '';
     }
     return html`
-      <div class="modal-overlay">
-        <div class="modal">
-          <h3>Migration warning</h3>
-          <p>The following fields from the legacy file were not recognized and were dropped:</p>
-          <ul class="migration-warning-list">
-            ${fields.map((field) => html`<li>${field}</li>`)}
-          </ul>
-          <div class="modal-actions">
-            <button
-              onClick=${function () {
-                migrationWarning.value = null;
-              }}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      </div>
+      <${Modal}
+        title="Migration warning"
+        actions=${[{ label: 'OK', onClick: () => (migrationWarning.value = null) }]}
+      >
+        <p>The following fields from the legacy file were not recognized and were dropped:</p>
+        <ul class="migration-warning-list">
+          ${fields.map((field) => html`<li>${field}</li>`)}
+        </ul>
+      </${Modal}>
     `;
   }
 
@@ -939,6 +1016,18 @@
 
   global.document.addEventListener('keydown', handleKeydown);
 
+  global.document.addEventListener('click', function () {
+    if (themePopoverOpen.value) {
+      themePopoverOpen.value = false;
+    }
+  });
+
+  global.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+    if (themePreference.value.mode === 'system') {
+      applyThemePreference();
+    }
+  });
+
   global.addEventListener('beforeunload', function (e) {
     if (Store.dirty.value) {
       e.preventDefault();
@@ -958,6 +1047,9 @@
     saveAsPrompt.value;
     unsavedChangesPrompt.value;
     migrationWarning.value;
+    themePreference.value;
+    themePopoverOpen.value;
+    applyThemePreference();
     rerender();
   });
 })(typeof window !== 'undefined' ? window : globalThis);
