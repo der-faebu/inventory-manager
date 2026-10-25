@@ -328,7 +328,7 @@ export function emptyCustomer(): Customer {
 export interface Document {
   format: string;
   customer: Customer;
-  portInfo: Record<string, PortInfo>;
+  portInfo: Record<string, Record<string, PortInfo>>;
   devices: Entity[];
   users: Entity[];
   network: Entity[];

@@ -127,18 +127,15 @@ export function updateDevice(id: string, patch: Partial<Entity>): void {
 }
 
 export function getPortInfo(networkId: string, port: number | string): PortInfo {
-  const all = document.value.portInfo[networkId] as Record<string, PortInfo> | undefined;
+  const all = document.value.portInfo[networkId];
   return (all && all[String(port)]) || {};
 }
 
 export function setPortInfo(networkId: string, port: number | string, patch: Partial<PortInfo>): void {
-  const networkPortInfo = Object.assign(
-    {},
-    document.value.portInfo[networkId] as unknown as Record<string, PortInfo>,
-  );
+  const networkPortInfo = Object.assign({}, document.value.portInfo[networkId]);
   networkPortInfo[String(port)] = Object.assign({}, networkPortInfo[String(port)], patch);
   const portInfoPatch = Object.assign({}, document.value.portInfo);
-  portInfoPatch[networkId] = networkPortInfo as unknown as PortInfo;
+  portInfoPatch[networkId] = networkPortInfo;
   document.value = Object.assign({}, document.value, { portInfo: portInfoPatch });
   bumpRevision();
 }
