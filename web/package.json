@@ -15,6 +15,7 @@
   "dependencies": {
     "@astrojs/preact": "^6.1.1",
     "@preact/signals": "^2.11.3",
+    "@preact/signals-core": "^1.14.4",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.2",
     "preact": "^11.0.2",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@types/node": "^26.6.5",
     "typescript": "^6.0.3"
   }
 }

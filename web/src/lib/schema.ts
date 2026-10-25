@@ -359,7 +359,7 @@ export function emptyDocument(): Document {
 
 // Backfills any collection arrays missing from a document (e.g. one saved before a
 // collection was added to the schema), so older saved/autosaved documents keep loading.
-export function normalizeDocument(doc: Record<string, unknown>): Document {
+export function normalizeDocument(doc: Document | Record<string, unknown>): Document {
   ALL_COLLECTION_KEYS.forEach((key) => {
     if (!Array.isArray(doc[key])) {
       doc[key] = [];
