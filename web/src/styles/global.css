@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --accent-h: 25;
+  --accent-s: 68%;
+  --accent-l: 48%;
+
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-dark: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 16%));
+  --accent-darker: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 24%));
+
+  --surface: #fff;
+  --surface-sunk: hsl(var(--accent-h) calc(var(--accent-s) - 8%) 95%);
+  --surface-hover: hsl(var(--accent-h) calc(var(--accent-s) - 18%) 90%);
+  --border: hsl(var(--accent-h) 55% 82%);
+  --ink: hsl(var(--accent-h) 45% 16%);
+}
+
+:root[data-theme='dark'] {
+  --surface: hsl(var(--accent-h) 20% 14%);
+  --surface-sunk: hsl(var(--accent-h) 22% 10%);
+  --surface-hover: hsl(var(--accent-h) 22% 20%);
+  --border: hsl(var(--accent-h) 25% 28%);
+  --ink: hsl(var(--accent-h) 20% 92%);
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface-sunk);
+}
+
+button {
+  padding: 1px 7px;
+}
