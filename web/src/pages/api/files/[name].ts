@@ -5,6 +5,11 @@ import { FileNotFoundError, InvalidFilenameError } from '../../../lib/file-store
 export const prerender = false;
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const BESTAND_MIME = 'application/json';
+
+function contentTypeFor(name: string): string {
+  return name.endsWith('.xlsx') ? XLSX_MIME : BESTAND_MIME;
+}
 
 export const GET: APIRoute = async ({ params }) => {
   const name = params.name ?? '';
@@ -12,7 +17,7 @@ export const GET: APIRoute = async ({ params }) => {
     const bytes = await defaultFileStore.read(name);
     return new Response(new Uint8Array(bytes), {
       status: 200,
-      headers: { 'Content-Type': XLSX_MIME },
+      headers: { 'Content-Type': contentTypeFor(name) },
     });
   } catch (err) {
     if (err instanceof InvalidFilenameError) {

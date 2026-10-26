@@ -66,7 +66,7 @@ export function resetDocument(): void {
   filename.value = null;
 }
 
-export function loadDocument(doc: Record<string, unknown>, loadedFilename: string | null): void {
+export function loadDocument(doc: Document | Record<string, unknown>, loadedFilename: string | null): void {
   document.value = Schema.normalizeDocument(doc);
   revision.value = 0;
   lastSavedRevision.value = 0;

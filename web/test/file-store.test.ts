@@ -37,12 +37,22 @@ test('write then list shows the written file', async () => {
   });
 });
 
-test('list only returns .xlsx files', async () => {
+test('list only returns .xlsx and .bestand files', async () => {
   await withTempDir(async (dir) => {
     const store = new FileStore(dir);
     await store.write('foo.xlsx', Buffer.from('a'));
+    await store.write('bar.bestand', Buffer.from('c'));
     await writeFile(path.join(dir, 'notes.txt'), Buffer.from('b'));
-    assert.deepEqual(await store.list(), ['foo.xlsx']);
+    assert.deepEqual(await store.list(), ['bar.bestand', 'foo.xlsx']);
+  });
+});
+
+test('write then read round-trips a .bestand file', async () => {
+  await withTempDir(async (dir) => {
+    const store = new FileStore(dir);
+    const bytes = Buffer.from('{"format":"inventory-manager-1"}');
+    await store.write('doc.bestand', bytes);
+    assert.deepEqual(await store.read('doc.bestand'), bytes);
   });
 });
 
@@ -71,7 +81,7 @@ test('read throws FileNotFoundError for a missing file', async () => {
   });
 });
 
-test('rejects filenames that are not .xlsx', async () => {
+test('rejects filenames with an unsupported extension', async () => {
   await withTempDir(async (dir) => {
     const store = new FileStore(dir);
     await assert.rejects(() => store.write('foo.txt', Buffer.from('x')), InvalidFilenameError);

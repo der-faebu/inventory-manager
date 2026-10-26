@@ -4,11 +4,17 @@ import path from 'node:path';
 export class InvalidFilenameError extends Error {}
 export class FileNotFoundError extends Error {}
 
+const ALLOWED_EXTENSIONS = ['.xlsx', '.bestand'];
+
+function hasAllowedExtension(name: string): boolean {
+  return ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
+
 function assertValidFilename(name: string): void {
   if (
     typeof name !== 'string' ||
     name.length === 0 ||
-    !name.endsWith('.xlsx') ||
+    !hasAllowedExtension(name) ||
     name.includes('\0') ||
     name.includes('/') ||
     name.includes('\\') ||
@@ -34,7 +40,7 @@ export class FileStore {
       throw err;
     });
     return entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.xlsx'))
+      .filter((entry) => entry.isFile() && hasAllowedExtension(entry.name))
       .map((entry) => entry.name)
       .sort();
   }
