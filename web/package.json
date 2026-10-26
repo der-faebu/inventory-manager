@@ -13,6 +13,7 @@
     "test": "node --test test/"
   },
   "dependencies": {
+    "@astrojs/node": "^11.1.9",
     "@astrojs/preact": "^6.1.1",
     "@preact/signals": "^2.11.3",
     "@preact/signals-core": "^1.14.4",
