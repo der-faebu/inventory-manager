@@ -1,7 +1,12 @@
-import XLSX from '../../../lib/xlsx.full.min.js';
-import type { WorkBook, WorkSheet } from '../../../lib/xlsx.full.min.js';
+import * as XLSXModule from '../../../lib/xlsx.full.min.js';
+import type { WorkBook, WorkSheet, XLSXStatic } from '../../../lib/xlsx.full.min.js';
 import * as Schema from './schema.ts';
 import type { CollectionKey, Document, Entity } from './schema.ts';
+
+// The vendored UMD build exposes its API as `module.exports` directly; some bundlers'
+// CJS interop synthesizes a `.default` for that, others (e.g. Vite's dev server for files
+// outside node_modules) don't, so accept either shape at runtime.
+const XLSX: XLSXStatic = (XLSXModule as unknown as { default?: XLSXStatic }).default ?? (XLSXModule as unknown as XLSXStatic);
 
 const SHEET_NAMES: Record<string, string> = {
   overview: 'Overview',
