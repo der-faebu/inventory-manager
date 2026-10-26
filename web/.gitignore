@@ -1,5 +1,7 @@
 # build output
 dist/
+# local file-store data dir
+data/
 # generated types
 .astro/
 
