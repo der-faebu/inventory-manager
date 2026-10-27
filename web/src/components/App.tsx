@@ -1,11 +1,7 @@
-import { signal, effect } from '@preact/signals';
 import type { JSX } from 'preact';
 import * as Schema from '../lib/schema.ts';
 import * as Store from '../lib/store.ts';
-import * as FileIO from '../lib/file-io.ts';
-import * as LegacyMigration from '../lib/legacy-migration.ts';
-import * as ExcelExport from '../lib/excel-export.ts';
-import type { Association, CollectionKey, Document, Entity, Field } from '../lib/schema.ts';
+import type { Association, CollectionKey, Entity, Field } from '../lib/schema.ts';
 import type { PortRow } from '../lib/store.ts';
 
 const FIELD_LABEL_CLASS =
@@ -14,238 +10,27 @@ const FIELD_VALUE_CLASS = 'py-1.5 px-2 border-b border-[var(--surface-hover)]';
 const FIELD_INPUT_CLASS =
   'w-full rounded-lg border-2 border-[var(--border)] bg-[var(--surface)] px-1.5 py-1 text-sm text-[color:var(--ink)]';
 
-const THEME_STORAGE_KEY = 'inventory-manager.theme';
-const THEME_PRESETS = [
-  { name: 'amber', h: 25 },
-  { name: 'teal', h: 175 },
-  { name: 'indigo', h: 235 },
-  { name: 'rose', h: 345 },
-  { name: 'olive', h: 95 },
-];
-
-interface ThemePreference {
-  hue: number;
-  mode: 'system' | 'light' | 'dark';
-}
-
-function loadThemePreference(): ThemePreference {
-  try {
-    const stored = JSON.parse(globalThis.localStorage.getItem(THEME_STORAGE_KEY) as string);
-    return Object.assign({ hue: 25, mode: 'system' }, stored || {});
-  } catch {
-    return { hue: 25, mode: 'system' };
-  }
-}
-
-const themePreference = signal<ThemePreference>(loadThemePreference());
-const themePopoverOpen = signal(false);
-
-function saveThemePreference(next: ThemePreference): void {
-  themePreference.value = next;
-  globalThis.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(next));
-}
-
-function setThemeHue(hue: number): void {
-  saveThemePreference(Object.assign({}, themePreference.value, { hue: Number(hue) }));
-}
-
-function setThemeMode(mode: ThemePreference['mode']): void {
-  saveThemePreference(Object.assign({}, themePreference.value, { mode }));
-}
-
-function applyThemePreference(): void {
-  const pref = themePreference.value;
-  const root = globalThis.document.documentElement;
-  root.style.setProperty('--accent-h', String(pref.hue));
-  const isDark =
-    pref.mode === 'dark' ||
-    (pref.mode === 'system' && globalThis.matchMedia('(prefers-color-scheme: dark)').matches);
-  root.setAttribute('data-theme', isDark ? 'dark' : 'light');
-}
-
-const expandedFolders = signal<Record<string, boolean>>({});
-const statusMessage = signal('');
-const errorMessage = signal('');
-const saveAsPrompt = signal<{ defaultName: string } | null>(null);
-const unsavedChangesPrompt = signal<{ pendingAction: 'new' | 'open' } | null>(null);
-const pendingOpenFile = signal<File | null>(null);
-const migrationWarning = signal<string[] | null>(null);
-
-function showStatus(message: string): void {
-  statusMessage.value = message;
-  globalThis.setTimeout(() => {
-    if (statusMessage.value === message) {
-      statusMessage.value = '';
-    }
-  }, 3000);
-}
-
-function showError(message: string): void {
-  errorMessage.value = message;
-}
-
-function downloadBlob(blob: Blob, name: string): void {
-  const url = globalThis.URL.createObjectURL(blob);
-  const link = globalThis.document.createElement('a');
-  link.href = url;
-  link.download = name;
-  globalThis.document.body.appendChild(link);
-  link.click();
-  globalThis.document.body.removeChild(link);
-  globalThis.URL.revokeObjectURL(url);
-}
-
-function downloadDocument(doc: Document, name: string): void {
-  const json = FileIO.serializeDocument(doc);
-  downloadBlob(new Blob([json], { type: 'application/json' }), name);
-}
-
-function doExportExcel(): void {
-  try {
-    const workbook = ExcelExport.buildWorkbook(Store.document.value);
-    const binary = ExcelExport.writeBuffer(workbook);
-    const blob = new Blob([binary], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    const customerName = Store.document.value.customer.name || 'Kunde';
-    const name = 'Bestandsaufnahme ' + FileIO.sanitizeFilename(customerName) + '.xlsx';
-    downloadBlob(blob, name);
-    showStatus('Exported ' + name);
-  } catch (e) {
-    showError('Export failed: ' + (e as Error).message);
-  }
-}
-
-function performSave(name: string): boolean {
-  try {
-    downloadDocument(Store.document.value, name);
-    Store.markSaved(name);
-    showStatus('Saved ' + name);
-    return true;
-  } catch (e) {
-    showError('Save failed: ' + (e as Error).message);
-    return false;
-  }
-}
-
-function resolveSaveName(): string {
-  return Store.filename.value || FileIO.suggestFilename(Store.document.value);
-}
-
-function doSave(): void {
-  performSave(resolveSaveName());
-}
-
-function doSaveAs(): void {
-  saveAsPrompt.value = { defaultName: resolveSaveName() };
-}
-
-function confirmSaveAs(name: string): void {
-  saveAsPrompt.value = null;
-  if (name) {
-    performSave(name);
-  }
-}
-
-function doNew(): void {
-  if (Store.dirty.value) {
-    unsavedChangesPrompt.value = { pendingAction: 'new' };
-    return;
-  }
-  Store.resetDocument();
-  showStatus('New document created');
-}
-
-function loadFile(file: File): void {
-  const reader = new globalThis.FileReader();
-  reader.onload = () => {
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(reader.result as string);
-    } catch {
-      showError('Open failed: file is not valid JSON.');
-      return;
-    }
-
-    const format = LegacyMigration.detectFormat(parsed);
-    try {
-      if (format === 'current') {
-        Store.loadDocument(parsed as unknown as Document, file.name);
-        showStatus('Opened ' + file.name);
-      } else if (format === 'legacy') {
-        const result = LegacyMigration.migrate(parsed);
-        Store.loadDocument(result.document, null);
-        Store.bumpRevision();
-        showStatus('Migrated legacy file ' + file.name);
-        if (result.unmappedFields.length > 0) {
-          migrationWarning.value = result.unmappedFields;
-        }
-      } else {
-        showError('Open failed: file is not a recognized inventory document.');
-      }
-    } catch (e) {
-      showError('Open failed: ' + (e as Error).message);
-    }
-  };
-  reader.onerror = () => {
-    showError('Open failed: could not read the file.');
-  };
-  reader.readAsText(file);
-}
-
-function doOpen(file: File | null): void {
-  if (!file) {
-    return;
-  }
-  if (Store.dirty.value) {
-    pendingOpenFile.value = file;
-    unsavedChangesPrompt.value = { pendingAction: 'open' };
-    return;
-  }
-  loadFile(file);
-}
-
-function resolveUnsavedChanges(choice: 'save' | 'discard' | 'cancel'): void {
-  const prompt = unsavedChangesPrompt.value;
-  if (!prompt) {
-    return;
-  }
-  if (choice === 'cancel') {
-    unsavedChangesPrompt.value = null;
-    pendingOpenFile.value = null;
-    return;
-  }
-  if (choice === 'save') {
-    if (!performSave(resolveSaveName())) {
-      return;
-    }
-  }
-  unsavedChangesPrompt.value = null;
-  if (prompt.pendingAction === 'new') {
-    Store.resetDocument();
-    showStatus('New document created');
-  } else if (prompt.pendingAction === 'open') {
-    const file = pendingOpenFile.value;
-    pendingOpenFile.value = null;
-    if (file) {
-      loadFile(file);
-    }
-  }
-}
-
-function triggerOpenFilePicker(): void {
-  const input = globalThis.document.getElementById('open-file-input') as HTMLInputElement | null;
-  if (input) {
-    input.value = '';
-    input.click();
-  }
-}
-
-function toggleFolder(key: string): void {
-  const current = expandedFolders.value;
-  const isExpanded = current[key] !== false;
-  expandedFolders.value = Object.assign({}, current, { [key]: !isExpanded });
-}
+import { themePopoverOpen, themePreference, setThemeHue, setThemeMode, THEME_PRESETS } from '../state/theme.ts';
+import {
+  errorMessage,
+  expandedFolders,
+  migrationWarning,
+  saveAsPrompt,
+  statusMessage,
+  toggleFolder,
+  unsavedChangesPrompt,
+} from '../state/ui.ts';
+import {
+  confirmSaveAs,
+  doExportExcel,
+  doNew,
+  doOpen,
+  doSave,
+  doSaveAs,
+  resolveUnsavedChanges,
+  triggerOpenFilePicker,
+} from '../actions/file.ts';
+import { attachGlobalListeners } from '../actions/global-listeners.ts';
 
 function entityLabel(key: CollectionKey, entity: Entity): string {
   return Schema.entityLabel(key, entity);
@@ -1063,65 +848,6 @@ function MigrationWarningModal(): JSX.Element | string {
       </ul>
     </Modal>
   );
-}
-
-function handleKeydown(e: KeyboardEvent): void {
-  const ctrlOrCmd = e.ctrlKey || e.metaKey;
-  if (!ctrlOrCmd) {
-    return;
-  }
-  const key = e.key.toLowerCase();
-  if (key === 's') {
-    e.preventDefault();
-    if (e.shiftKey) {
-      doSaveAs();
-    } else {
-      doSave();
-    }
-  } else if (key === 'o') {
-    e.preventDefault();
-    triggerOpenFilePicker();
-  } else if (key === 'n') {
-    e.preventDefault();
-    doNew();
-  }
-}
-
-let globalListenersAttached = false;
-
-function attachGlobalListeners(): void {
-  if (globalListenersAttached) {
-    return;
-  }
-  globalListenersAttached = true;
-
-  globalThis.document.addEventListener('keydown', handleKeydown);
-
-  globalThis.document.addEventListener('click', () => {
-    if (themePopoverOpen.value) {
-      themePopoverOpen.value = false;
-    }
-  });
-
-  globalThis.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (themePreference.value.mode === 'system') {
-      applyThemePreference();
-    }
-  });
-
-  globalThis.addEventListener('beforeunload', (e: BeforeUnloadEvent) => {
-    if (Store.dirty.value) {
-      e.preventDefault();
-      e.returnValue = '';
-    }
-  });
-
-  effect(() => {
-    themePreference.value;
-    themePopoverOpen.value;
-    Store.dirty.value;
-    applyThemePreference();
-  });
 }
 
 export default function App(): JSX.Element {
