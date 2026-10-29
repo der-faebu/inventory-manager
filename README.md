@@ -4,8 +4,8 @@ A web app for taking an IT inventory at a customer site. Record devices, users,
 network components, applications, licenses, locations, rooms and mailboxes, link
 them to each other, and export the result to Excel.
 
-Everything for one customer lives in a single `.xlsx` document, so there is no
-database to set up.
+Everything for one customer lives in a single `.bestand` file (JSON) that you
+save and open through the browser, so there is no database to set up.
 
 ## Features
 
@@ -17,8 +17,11 @@ database to set up.
   port, including ports marked faulty.
 - **Customer header:** name, customer number, main contact, inventory date, who
   took the inventory, and version.
-- **Excel export:** one `.xlsx` document per customer, built with
-  [ExcelJS](https://github.com/exceljs/exceljs).
+- **Save and open:** documents are saved as `.bestand` files, downloaded by the
+  browser, and opened from a file you pick.
+- **Excel export:** download the inventory as an `.xlsx` workbook, built with
+  [ExcelJS](https://github.com/exceljs/exceljs). Export is one-way; the app
+  can't open the workbook again.
 - **Legacy import:** older save files are migrated to the current format when
   they are opened.
 - **Themes:** pick a colour theme from the toolbar (olive by default).
@@ -28,7 +31,7 @@ database to set up.
 - [Astro](https://astro.build) 7 with the Node standalone adapter
 - [Preact](https://preactjs.com) and Preact Signals for the UI state
 - [Tailwind CSS](https://tailwindcss.com) 4
-- [ExcelJS](https://github.com/exceljs/exceljs) for reading and writing `.xlsx`
+- [ExcelJS](https://github.com/exceljs/exceljs) for the `.xlsx` export
 - TypeScript, tested with the built-in `node --test` runner
 
 ## Getting started
@@ -55,8 +58,7 @@ docker compose up -d --build
 ```
 
 The app is then served at <http://localhost:4321>. Set `PORT=8080` to use a
-different host port. Documents are stored in the `inventory-data` volume and
-survive restarts.
+different host port.
 
 To develop inside a container with hot reload:
 
@@ -69,9 +71,13 @@ settings and more.
 
 ## Where documents are stored
 
-The server reads and writes `.xlsx` documents in a data directory. It defaults
-to `web/data/` when you run locally and `/app/web/data` in the container.
-Override it with the `INVENTORY_DATA_DIR` environment variable.
+Currently documents are not stored on the server. Save downloads a `.bestand`
+file through the browser and Open reads one from your machine.
+
+The server already has a file API (`/api/files`) that reads and writes
+documents in a data directory (`web/data/` locally, `/app/web/data` in the
+container, overridable with `INVENTORY_DATA_DIR`), but the UI doesn't use it
+yet.
 
 ## Project layout
 

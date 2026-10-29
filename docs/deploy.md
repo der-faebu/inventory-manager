@@ -11,8 +11,8 @@ docker compose down            # stop (keeps the inventory-data volume)
 ```
 
 The app is served at http://localhost:4321 (set `PORT=8080` to change the host
-port). Documents persist in the `inventory-data` volume; `docker compose down -v`
-deletes it.
+port). The compose file mounts an `inventory-data` volume at `/app/web/data` for
+the server file API (see below); `docker compose down -v` deletes it.
 
 ## Docker
 
@@ -26,10 +26,11 @@ docker run -d -p 4321:4321 -v inventory-data:/app/web/data inventory-manager-web
 - The app listens on port 4321 and serves both the built static client and the
   file-browsing API (`/api/files`) from the same Node process
   (`@astrojs/node` standalone adapter).
-- `.xlsx` documents are read/written under `/app/web/data` inside the
-  container. Mount a named volume or bind mount there to persist them across
-  container restarts — without it, files are lost when the container is
-  removed.
+- The file API reads/writes `.bestand` and `.xlsx` files under `/app/web/data`
+  inside the container. The UI doesn't use it yet: Save downloads a `.bestand`
+  file through the browser and Open reads one from the user's machine. Mount a
+  named volume or bind mount there so files written through the API survive
+  container removal.
 - Override the data directory inside the container with `INVENTORY_DATA_DIR`
   if needed; it defaults to `data` (resolved relative to the working
   directory, i.e. `/app/web/data`).
@@ -45,4 +46,4 @@ docker compose -f docker-compose.dev.yml down      # stop; add -v to reset node_
 ```
 
 Dependencies live in the `dev-node-modules` volume (re-run `up` after changing
-`package.json`). Documents are written to `web/data/` on the host.
+`package.json`). Files written through the server file API land in `web/data/` on the host (the UI doesn't use it yet, so it stays empty for now).
