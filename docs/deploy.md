@@ -33,3 +33,16 @@ docker run -d -p 4321:4321 -v inventory-data:/app/web/data inventory-manager-web
 - Override the data directory inside the container with `INVENTORY_DATA_DIR`
   if needed; it defaults to `data` (resolved relative to the working
   directory, i.e. `/app/web/data`).
+
+## Development with Compose
+
+`docker-compose.dev.yml` mounts `web/` into a Node container and runs `astro dev`, so
+edits on the host hot-reload without rebuilding the image:
+
+```sh
+docker compose -f docker-compose.dev.yml up
+docker compose -f docker-compose.dev.yml down      # stop; add -v to reset node_modules
+```
+
+Dependencies live in the `dev-node-modules` volume (re-run `up` after changing
+`package.json`). Documents are written to `web/data/` on the host.

@@ -1,12 +1,14 @@
 import { signal } from '@preact/signals';
 
 const THEME_STORAGE_KEY = 'inventory-manager.theme';
-export const THEME_PRESETS = [
+const DEFAULT_SATURATION = 68;
+const DEFAULT_LIGHTNESS = 48;
+export const THEME_PRESETS: { name: string; h: number; s?: number; l?: number }[] = [
   { name: 'amber', h: 25 },
   { name: 'teal', h: 175 },
   { name: 'indigo', h: 235 },
   { name: 'rose', h: 345 },
-  { name: 'olive', h: 95 },
+  { name: 'olive', h: 68, s: 39, l: 30 },
 ];
 
 export interface ThemePreference {
@@ -17,9 +19,9 @@ export interface ThemePreference {
 function loadThemePreference(): ThemePreference {
   try {
     const stored = JSON.parse(globalThis.localStorage.getItem(THEME_STORAGE_KEY) as string);
-    return Object.assign({ hue: 25, mode: 'system' }, stored || {});
+    return Object.assign({ hue: 68, mode: 'system' }, stored || {});
   } catch {
-    return { hue: 25, mode: 'system' };
+    return { hue: 68, mode: 'system' };
   }
 }
 
@@ -42,7 +44,10 @@ export function setThemeMode(mode: ThemePreference['mode']): void {
 export function applyThemePreference(): void {
   const pref = themePreference.value;
   const root = globalThis.document.documentElement;
+  const preset = THEME_PRESETS.find((p) => p.h === pref.hue);
   root.style.setProperty('--accent-h', String(pref.hue));
+  root.style.setProperty('--accent-s', (preset?.s ?? DEFAULT_SATURATION) + '%');
+  root.style.setProperty('--accent-l', (preset?.l ?? DEFAULT_LIGHTNESS) + '%');
   const isDark =
     pref.mode === 'dark' ||
     (pref.mode === 'system' && globalThis.matchMedia('(prefers-color-scheme: dark)').matches);

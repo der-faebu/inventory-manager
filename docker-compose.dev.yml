@@ -1,0 +1,21 @@
+# Development: mounts web/ into a stock Node image and runs `astro dev`, so source
+# edits are picked up by HMR without rebuilding. Run with:
+#   docker compose -f docker-compose.dev.yml up
+services:
+  web:
+    image: node:22-alpine
+    container_name: inventory-manager-web-dev
+    working_dir: /app/web
+    # Install into the node_modules volume on start (fast no-op when up to date).
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 4321"
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${PORT:-4321}:4321"
+    volumes:
+      - ./web:/app/web
+      # Keep container-built (linux) dependencies out of the host's web/node_modules.
+      - dev-node-modules:/app/web/node_modules
+
+volumes:
+  dev-node-modules:

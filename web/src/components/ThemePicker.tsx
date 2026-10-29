@@ -23,7 +23,7 @@ export function ThemePicker(): JSX.Element {
           class="absolute right-0 top-11 z-50 w-[220px] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
           onClick={(e: Event) => e.stopPropagation()}
         >
-          <h4 class="mb-2 mt-0 text-xs uppercase tracking-wide text-[color:var(--accent-dark)]">Accent color</h4>
+          <h4 class="mb-2 mt-0 text-xs uppercase tracking-wide text-[color:var(--accent-text)]">Accent color</h4>
           <div class="mb-3.5 flex flex-wrap gap-2">
             {THEME_PRESETS.map((preset) => (
               <button
@@ -35,7 +35,7 @@ export function ThemePicker(): JSX.Element {
                     : '')
                 }
                 title={preset.name}
-                style={'background: hsl(' + preset.h + ' 68% 48%)'}
+                style={'background: hsl(' + preset.h + ' ' + (preset.s ?? 68) + '% ' + (preset.l ?? 48) + '%)'}
                 onClick={() => {
                   setThemeHue(preset.h);
                 }}
@@ -45,7 +45,7 @@ export function ThemePicker(): JSX.Element {
           <div class="mb-3.5 flex items-center gap-2">
             <span style="font-size: 12px">custom</span>
             <input
-              class="flex-1"
+              class="min-w-0 flex-1"
               type="range"
               min="0"
               max="360"
@@ -55,7 +55,7 @@ export function ThemePicker(): JSX.Element {
               }}
             />
           </div>
-          <h4 class="mb-2 mt-0 text-xs uppercase tracking-wide text-[color:var(--accent-dark)]">Appearance</h4>
+          <h4 class="mb-2 mt-0 text-xs uppercase tracking-wide text-[color:var(--accent-text)]">Appearance</h4>
           <div class="flex overflow-hidden rounded-lg border border-[var(--border)]">
             {(['system', 'light', 'dark'] as const).map((mode) => (
               <button

@@ -48,7 +48,7 @@ export function Tree(): JSX.Element {
       <li key={key}>
         <div
           class={
-            'mx-1.5 my-px flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-[10px] px-2 py-1 font-bold text-[color:var(--accent-dark)] hover:bg-[var(--surface-hover)]' +
+            'mx-1.5 my-px flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-[10px] px-2 py-1 font-bold text-[color:var(--accent-text)] hover:bg-[var(--surface-hover)]' +
             (selected === key ? ' bg-[var(--accent)] text-white hover:bg-[var(--accent)]' : '')
           }
           onClick={() => {
