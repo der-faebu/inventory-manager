@@ -26,7 +26,7 @@ export function Toolbar(): JSX.Element {
       <input
         id="open-file-input"
         type="file"
-        accept=".bestand,application/json"
+        accept=".bestand,.json,application/json"
         style="display: none"
         onChange={(e: Event & { currentTarget: HTMLInputElement }) => {
           doOpen(e.currentTarget.files?.[0] || null);

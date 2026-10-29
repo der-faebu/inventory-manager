@@ -4,12 +4,11 @@ const THEME_STORAGE_KEY = 'inventory-manager.theme';
 const DEFAULT_SATURATION = 68;
 const DEFAULT_LIGHTNESS = 48;
 export const THEME_PRESETS: { name: string; h: number; s?: number; l?: number }[] = [
+  { name: 'olive', h: 68, s: 39, l: 30 },
+  { name: 'violet', h: 264 },
   { name: 'amber', h: 25 },
   { name: 'teal', h: 175 },
   { name: 'indigo', h: 235 },
-  { name: 'violet', h: 264 },
-  { name: 'rose', h: 345 },
-  { name: 'olive', h: 68, s: 39, l: 30 },
 ];
 
 export interface ThemePreference {
