@@ -6,6 +6,7 @@ import { Tree } from './Tree.tsx';
 import { ErrorModal } from './modals/ErrorModal.tsx';
 import { MigrationWarningModal } from './modals/MigrationWarningModal.tsx';
 import { SaveAsModal } from './modals/SaveAsModal.tsx';
+import { DeleteWarningModal } from './modals/DeleteWarningModal.tsx';
 import { UnsavedChangesModal } from './modals/UnsavedChangesModal.tsx';
 
 export default function App(): JSX.Element {
@@ -24,6 +25,7 @@ export default function App(): JSX.Element {
       </div>
       <SaveAsModal />
       <UnsavedChangesModal />
+      <DeleteWarningModal />
       <ErrorModal />
       <MigrationWarningModal />
     </div>

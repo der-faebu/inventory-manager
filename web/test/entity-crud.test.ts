@@ -139,3 +139,16 @@ test('deleteEntity removes the deleted id from other entities\' association list
   assert.deepEqual(Store.document.value.devices[0].lizenzen, [keep.id]);
   assert.deepEqual(Store.document.value.users[0].lizenzen, [keep.id]);
 });
+
+test('entityLinks reports incoming and outgoing links, ignoring empty ones', () => {
+  const license = Store.addEntity('licenses');
+  const device = Store.addEntity('devices');
+  const assoc = Schema.ASSOCIATIONS.find(
+    (a) => a.ownerCollection === 'devices' && a.targetCollection === 'licenses',
+  ) as Schema.Association;
+  assert.deepEqual(Store.entityLinks('licenses', license.id as string), []);
+  assert.deepEqual(Store.entityLinks('devices', device.id as string), []);
+  Store.toggleAssociation(assoc, device.id as string, license.id as string);
+  assert.deepEqual(Store.entityLinks('licenses', license.id as string), [{ label: 'Devices', count: 1 }]);
+  assert.deepEqual(Store.entityLinks('devices', device.id as string), [{ label: 'Licenses', count: 1 }]);
+});

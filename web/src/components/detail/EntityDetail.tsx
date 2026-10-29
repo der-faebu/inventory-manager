@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import * as Schema from '../../lib/schema.ts';
 import * as Store from '../../lib/store.ts';
 import type { CollectionKey, Entity } from '../../lib/schema.ts';
+import { deletePrompt } from '../../state/ui.ts';
 import { Button } from '../ui/Button.tsx';
 import { FieldRow, FieldTable } from '../ui/FieldTable.tsx';
 import { PageTitle } from '../ui/PageTitle.tsx';
@@ -53,7 +54,12 @@ export function EntityDetail(props: { collectionKey: CollectionKey; entity: Enti
       <Button
         class="mt-4"
         onClick={() => {
-          Store.deleteEntity(collectionKey, entity.id as string);
+          const links = Store.entityLinks(collectionKey, entity.id as string);
+          if (links.length > 0) {
+            deletePrompt.value = { collectionKey, id: entity.id as string, links };
+          } else {
+            Store.deleteEntity(collectionKey, entity.id as string);
+          }
         }}
       >
         Delete

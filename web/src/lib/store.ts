@@ -99,6 +99,31 @@ export function updateEntity(collectionKey: CollectionKey, id: string, patch: Pa
   bumpRevision();
 }
 
+export interface LinkSummary {
+  label: string;
+  count: number;
+}
+
+// Who links to this entity, and what it links to, so a delete can warn first.
+export function entityLinks(collectionKey: CollectionKey, id: string): LinkSummary[] {
+  const links: LinkSummary[] = [];
+  Schema.ASSOCIATIONS.forEach((association) => {
+    if (association.targetCollection === collectionKey) {
+      const count = document.value[association.ownerCollection].filter((owner) =>
+        ((owner[association.fieldKey] as string[]) || []).includes(id),
+      ).length;
+      links.push({ label: Schema.COLLECTIONS[association.ownerCollection].many, count });
+    }
+    if (association.ownerCollection === collectionKey) {
+      const entity = document.value[collectionKey].find((e) => e.id === id);
+      const targetIds = document.value[association.targetCollection].map((t) => t.id);
+      const count = ((entity?.[association.fieldKey] as string[]) || []).filter((t) => targetIds.includes(t)).length;
+      links.push({ label: association.label, count });
+    }
+  });
+  return links.filter((link) => link.count > 0);
+}
+
 export function deleteEntity(collectionKey: CollectionKey, id: string): void {
   const patch: Partial<Schema.Document> = {
     [collectionKey]: document.value[collectionKey].filter((entity) => entity.id !== id),
