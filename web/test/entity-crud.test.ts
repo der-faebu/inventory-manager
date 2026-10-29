@@ -109,3 +109,13 @@ test('device switch ref field resolves against real Network data by id', () => {
   const resolved = Store.document.value.network.find((n) => n.id === updated?.switch);
   assert.equal(resolved?.name, 'Core Switch');
 });
+
+test('addOwnerAssociated creates an owner that already links to the target', () => {
+  const license = Store.addEntity('licenses');
+  const association = Schema.ASSOCIATIONS.find(
+    (a) => a.ownerCollection === 'devices' && a.targetCollection === 'licenses',
+  ) as Schema.Association;
+  const device = Store.addOwnerAssociated(association, license.id as string);
+  assert.equal(Store.document.value.devices.length, 1);
+  assert.deepEqual(Store.document.value.devices.find((d) => d.id === device.id)?.[association.fieldKey], [license.id]);
+});

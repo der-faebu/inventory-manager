@@ -198,3 +198,9 @@ export function addEntityAssociated(association: Association, ownerId: string, o
   toggleAssociation(association, ownerId, entity.id as string);
   return entity;
 }
+
+export function addOwnerAssociated(association: Association, targetId: string, overrides?: Partial<Entity>): Entity {
+  const entity = addEntity(association.ownerCollection, overrides);
+  toggleAssociation(association, entity.id as string, targetId);
+  return entity;
+}

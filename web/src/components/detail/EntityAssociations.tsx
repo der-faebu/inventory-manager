@@ -40,6 +40,10 @@ function ReverseAssociationList(props: { association: Association; target: Entit
         checked: ((owner[association.fieldKey] as string[]) || []).includes(target.id as string),
       }))}
       onToggle={(id) => Store.toggleAssociation(association, id, target.id as string)}
+      onCreate={() => {
+        const entity = Store.addOwnerAssociated(association, target.id as string);
+        Store.selectedKey.value = association.ownerCollection + ':' + entity.id;
+      }}
     />
   );
 }
