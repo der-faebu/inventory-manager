@@ -7,6 +7,7 @@ export const THEME_PRESETS: { name: string; h: number; s?: number; l?: number }[
   { name: 'amber', h: 25 },
   { name: 'teal', h: 175 },
   { name: 'indigo', h: 235 },
+  { name: 'violet', h: 264 },
   { name: 'rose', h: 345 },
   { name: 'olive', h: 68, s: 39, l: 30 },
 ];
