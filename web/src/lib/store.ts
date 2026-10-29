@@ -100,10 +100,17 @@ export function updateEntity(collectionKey: CollectionKey, id: string, patch: Pa
 }
 
 export function deleteEntity(collectionKey: CollectionKey, id: string): void {
-  const collectionPatch = {
+  const patch: Partial<Schema.Document> = {
     [collectionKey]: document.value[collectionKey].filter((entity) => entity.id !== id),
   };
-  document.value = Object.assign({}, document.value, collectionPatch);
+  Schema.ASSOCIATIONS.filter((association) => association.targetCollection === collectionKey).forEach((association) => {
+    const owners = patch[association.ownerCollection] || document.value[association.ownerCollection];
+    patch[association.ownerCollection] = owners.map((owner) => {
+      const linked = (owner[association.fieldKey] as string[]) || [];
+      return linked.includes(id) ? { ...owner, [association.fieldKey]: linked.filter((linkedId) => linkedId !== id) } : owner;
+    });
+  });
+  document.value = Object.assign({}, document.value, patch);
   if (selectedKey.value === collectionKey + ':' + id) {
     selectedKey.value = collectionKey;
   }

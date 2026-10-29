@@ -119,3 +119,23 @@ test('addOwnerAssociated creates an owner that already links to the target', () 
   assert.equal(Store.document.value.devices.length, 1);
   assert.deepEqual(Store.document.value.devices.find((d) => d.id === device.id)?.[association.fieldKey], [license.id]);
 });
+
+test('deleteEntity removes the deleted id from other entities\' association lists', () => {
+  const license = Store.addEntity('licenses');
+  const keep = Store.addEntity('licenses');
+  const [deviceAssoc, userAssoc] = ['devices', 'users'].map(
+    (owner) =>
+      Schema.ASSOCIATIONS.find(
+        (a) => a.ownerCollection === owner && a.targetCollection === 'licenses',
+      ) as Schema.Association,
+  );
+  const device = Store.addEntity('devices');
+  const user = Store.addEntity('users');
+  [license, keep].forEach((l) => {
+    Store.toggleAssociation(deviceAssoc, device.id as string, l.id as string);
+    Store.toggleAssociation(userAssoc, user.id as string, l.id as string);
+  });
+  Store.deleteEntity('licenses', license.id as string);
+  assert.deepEqual(Store.document.value.devices[0].lizenzen, [keep.id]);
+  assert.deepEqual(Store.document.value.users[0].lizenzen, [keep.id]);
+});
