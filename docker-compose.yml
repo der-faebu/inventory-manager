@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: inventory-manager-web
+    ports:
+      - "${PORT:-4321}:4321"
+    volumes:
+      - inventory-data:/app/web/data
+    restart: unless-stopped
+
+volumes:
+  inventory-data:

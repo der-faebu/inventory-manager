@@ -1,8 +1,18 @@
 # Deploy
 
-The app is built from `web/` but its Dockerfile lives at the repo root, because
-`web/src/lib/excel-export.ts` imports the vendored `lib/xlsx.full.min.js` from
-outside the `web/` directory — the build context must include both.
+The app is built from `web/`; its Dockerfile lives at the repo root.
+
+## Docker Compose
+
+```sh
+docker compose up -d --build   # build and start in the background
+docker compose logs -f         # follow logs
+docker compose down            # stop (keeps the inventory-data volume)
+```
+
+The app is served at http://localhost:4321 (set `PORT=8080` to change the host
+port). Documents persist in the `inventory-data` volume; `docker compose down -v`
+deletes it.
 
 ## Docker
 
