@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --accent-h: 68;
+  --accent-s: 39%;
+  --accent-l: 30%;
+
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-dark: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 16%));
+  --accent-darker: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 24%));
+
+  --accent-text: var(--accent-dark);
+
+  --surface: #fff;
+  --surface-sunk: hsl(var(--accent-h) 12% 95%);
+  --surface-hover: hsl(var(--accent-h) 14% 90%);
+  --border: hsl(var(--accent-h) 14% 82%);
+  --ink: hsl(var(--accent-h) 15% 16%);
+}
+
+:root[data-theme='dark'] {
+  --accent-text: hsl(var(--accent-h) calc(var(--accent-s) + 10%) 68%);
+  --surface: hsl(var(--accent-h) 8% 14%);
+  --surface-sunk: hsl(var(--accent-h) 8% 10%);
+  --surface-hover: hsl(var(--accent-h) 9% 20%);
+  --border: hsl(var(--accent-h) 10% 28%);
+  --ink: hsl(var(--accent-h) 10% 92%);
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface-sunk);
+}
+
+button {
+  padding: 1px 7px;
+}
