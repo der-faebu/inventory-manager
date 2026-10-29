@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import XLSX from '../../lib/xlsx.full.min.js';
+import * as XLSX from 'xlsx';
 import * as ExcelExport from '../src/lib/excel-export.ts';
 import * as Schema from '../src/lib/schema.ts';
 import type { Document } from '../src/lib/schema.ts';
@@ -95,7 +95,7 @@ test('Tree sheet has outline levels set before writing and column widths, no aut
   assert.ok(Array.isArray(sheet['!cols']) && sheet['!cols'].length > 0);
   assert.equal(sheet['!autofilter'], undefined);
   assert.ok(Array.isArray(sheet['!rows']));
-  assert.ok(sheet['!rows']?.some((r) => r && r.level > 0));
+  assert.ok(sheet['!rows']?.some((r) => r?.level && r.level > 0));
   assert.ok(sheet['!outline']);
 });
 

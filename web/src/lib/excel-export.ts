@@ -1,12 +1,7 @@
-import * as XLSXModule from '../../../lib/xlsx.full.min.js';
-import type { WorkBook, WorkSheet, XLSXStatic } from '../../../lib/xlsx.full.min.js';
+import * as XLSX from 'xlsx';
+import type { WorkBook, WorkSheet } from 'xlsx';
 import * as Schema from './schema.ts';
 import type { CollectionKey, Document, Entity } from './schema.ts';
-
-// The vendored UMD build exposes its API as `module.exports` directly; some bundlers'
-// CJS interop synthesizes a `.default` for that, others (e.g. Vite's dev server for files
-// outside node_modules) don't, so accept either shape at runtime.
-const XLSX: XLSXStatic = (XLSXModule as unknown as { default?: XLSXStatic }).default ?? (XLSXModule as unknown as XLSXStatic);
 
 const SHEET_NAMES: Record<string, string> = {
   overview: 'Overview',
@@ -239,7 +234,7 @@ function buildTreeSheet(doc: Document): WorkSheet {
 
   const sheet = sheetFromAOA(rows);
   setColumnWidths(sheet, [34, 100]);
-  sheet['!rows'] = levels.map((level) => (level ? { level } : undefined));
+  sheet['!rows'] = levels.map((level) => (level ? { level } : {}));
   sheet['!outline'] = { above: true };
   return sheet;
 }

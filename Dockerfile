@@ -1,6 +1,5 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY lib ./lib
 COPY web/package.json web/package-lock.json ./web/
 RUN npm --prefix web ci
 COPY web ./web
