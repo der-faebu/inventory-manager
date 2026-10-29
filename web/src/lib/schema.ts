@@ -67,13 +67,14 @@ export const CUSTOMER_FIELDS: CustomerField[] = [
 
 export const FORMAT = 'inventory-manager-1';
 
-export const DEVICE_TYPES = ['NUC', 'Laptop', 'PC', 'Thin Client', 'Server', 'Printer', 'Other'];
+export const DEVICE_TYPES = ['NUC', 'Laptop', 'PC', 'Thin Client', 'Server', 'Printer','Sonos', 'Other'];
 export const CONDITION = ['good', 'fair', 'replace'];
 export const NETWORK_CATEGORIES = ['Switch', 'Router', 'Firewall', 'Access Point', 'Other'];
 export const YES_NO = ['Yes', 'No'];
 export const MAILBOX_TYPES = ['Shared Mailbox', 'Resource', 'Distribution List'];
 export const MAILBOX_HOSTING = ['M365', 'Exchange', 'Other'];
 export const MANUAL_PORT_STATUSES = ['faulty'];
+export const LICENSE_TYPE = ['perpetual','subscription']
 
 export type FieldType = 'text' | 'select' | 'ip' | 'ref' | 'date';
 
@@ -133,13 +134,13 @@ export const APPLICATION_FIELDS: Field[] = [
   { key: 'name', label: 'Application', type: 'text' },
   { key: 'version', label: 'Version', type: 'text' },
   { key: 'vendor', label: 'Vendor', type: 'text' },
-  { key: 'licenseType', label: 'License type', type: 'text' },
+  { key: 'licenseType', label: 'License type', type: 'select',options: LICENSE_TYPE },
   { key: 'businessCritical', label: 'Business-critical', type: 'select', options: YES_NO },
 ];
 
 export const LICENSE_FIELDS: Field[] = [
   { key: 'product', label: 'License type / Product', type: 'text' },
-  { key: 'licenseType', label: 'License type', type: 'text' },
+  { key: 'licenseType', label: 'License type', type: 'select',options: LICENSE_TYPE },
   { key: 'purchasedCount', label: 'Purchased (count)', type: 'text' },
   { key: 'term', label: 'Term / Renewal', type: 'text' },
   { key: 'remark', label: 'Remark', type: 'text' },
