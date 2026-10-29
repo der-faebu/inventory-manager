@@ -19,9 +19,9 @@
     "@preact/signals-core": "^1.14.4",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.2",
+    "exceljs": "^4.4.0",
     "preact": "^11.0.2",
-    "tailwindcss": "^4.3.3",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

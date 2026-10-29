@@ -28,10 +28,10 @@ function downloadDocument(doc: Document, name: string): void {
   downloadBlob(new Blob([json], { type: 'application/json' }), name);
 }
 
-export function doExportExcel(): void {
+export async function doExportExcel(): Promise<void> {
   try {
     const workbook = ExcelExport.buildWorkbook(Store.document.value);
-    const binary = ExcelExport.writeBuffer(workbook);
+    const binary = await ExcelExport.writeBuffer(workbook);
     const blob = new Blob([binary], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });

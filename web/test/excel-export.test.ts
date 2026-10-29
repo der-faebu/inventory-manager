@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import * as ExcelExport from '../src/lib/excel-export.ts';
 import * as Schema from '../src/lib/schema.ts';
 import type { Document } from '../src/lib/schema.ts';
@@ -48,12 +48,26 @@ function docWithOneOfEach(): Document {
   return doc;
 }
 
+function sheetNames(workbook: ExcelJS.Workbook): string[] {
+  return workbook.worksheets.map((sheet) => sheet.name);
+}
+
+function sheetText(workbook: ExcelJS.Workbook, name: string): string {
+  const lines: string[] = [];
+  workbook.getWorksheet(name)!.eachRow((row) => {
+    lines.push((row.values as unknown[]).slice(1).join(' | '));
+  });
+  return lines.join('\n');
+}
+
+function sheet(workbook: ExcelJS.Workbook, name: string): ExcelJS.Worksheet {
+  return workbook.getWorksheet(name)!;
+}
+
 test('buildWorkbook produces sheets in the required order', () => {
-  const doc = docWithOneOfEach();
+  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
 
-  const workbook = ExcelExport.buildWorkbook(doc);
-
-  assert.deepEqual(workbook.SheetNames, [
+  assert.deepEqual(sheetNames(workbook), [
     'Overview',
     'Tree',
     'Devices',
@@ -70,105 +84,84 @@ test('buildWorkbook produces sheets in the required order', () => {
 });
 
 test('Overview sheet has column widths and no autofilter', () => {
-  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const sheet = workbook.Sheets['Overview'];
+  const overview = sheet(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Overview');
 
-  assert.ok(Array.isArray(sheet['!cols']) && sheet['!cols'].length > 0);
-  assert.equal(sheet['!autofilter'], undefined);
+  assert.ok(overview.getColumn(1).width! > 0);
+  assert.ok(!overview.autoFilter);
 });
 
 test('Overview sheet includes customer details and per-collection counts', () => {
-  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const sheet = workbook.Sheets['Overview'];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
-  const flat = rows.map((r) => r.join(' | ')).join('\n');
+  const text = sheetText(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Overview');
 
-  assert.ok(flat.includes('Acme'));
-  assert.ok(flat.includes('Devices'));
-  assert.ok(/Devices.*1/.test(flat) || flat.includes('1'));
+  assert.ok(text.includes('Acme'));
+  assert.ok(/Devices \| 1/.test(text));
 });
 
-test('Tree sheet has outline levels set before writing and column widths, no autofilter', () => {
-  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const sheet = workbook.Sheets['Tree'];
+test('Tree sheet has outline levels, a frozen header and column widths, no autofilter', () => {
+  const tree = sheet(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Tree');
 
-  assert.ok(Array.isArray(sheet['!cols']) && sheet['!cols'].length > 0);
-  assert.equal(sheet['!autofilter'], undefined);
-  assert.ok(Array.isArray(sheet['!rows']));
-  assert.ok(sheet['!rows']?.some((r) => r?.level && r.level > 0));
-  assert.ok(sheet['!outline']);
+  assert.ok(tree.getColumn(1).width! > 0);
+  assert.ok(!tree.autoFilter);
+  assert.equal(tree.views[0].state, 'frozen');
+
+  const levels = new Set<number>();
+  tree.eachRow((row) => levels.add(row.outlineLevel || 0));
+  assert.deepEqual([...levels].sort(), [0, 1, 2]);
 });
 
 test('Tree sheet reflects device associations and switch/port assignment', () => {
-  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const sheet = workbook.Sheets['Tree'];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
-  const flat = rows.map((r) => r.join(' | ')).join('\n');
+  const text = sheetText(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Tree');
 
-  assert.ok(flat.includes('PC-1'));
-  assert.ok(flat.includes('Doe John'));
-  assert.ok(flat.includes('App1'));
-  assert.ok(flat.includes('Office'));
-  assert.ok(flat.includes('Switch-1'));
+  assert.ok(text.includes('PC-1'));
+  assert.ok(text.includes('Doe John'));
+  assert.ok(text.includes('App1'));
+  assert.ok(text.includes('Office'));
+  assert.ok(text.includes('Switch-1'));
 });
 
-test('each of the 10 data sheets has column widths and an autofilter', () => {
+test('each data sheet has column widths, an autofilter and a frozen styled header', () => {
   const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const dataSheetNames = [
-    'Devices',
-    'Users',
-    'Network',
-    'Applications',
-    'Licenses',
-    'Monitors',
-    'Locations',
-    'Mailboxes',
-    'Ports',
-  ];
+  const dataSheetNames = ['Devices', 'Users', 'Network', 'Applications', 'Licenses', 'Monitors', 'Locations', 'Rooms', 'Mailboxes', 'Ports'];
 
   dataSheetNames.forEach((name) => {
-    const sheet = workbook.Sheets[name];
-    assert.ok(Array.isArray(sheet['!cols']) && sheet['!cols'].length > 0, name + ' should have !cols');
-    assert.ok(sheet['!autofilter'] && sheet['!autofilter'].ref, name + ' should have !autofilter');
+    const data = sheet(workbook, name);
+    assert.ok(data.getColumn(1).width! > 0, name + ' should have column widths');
+    assert.ok(data.autoFilter, name + ' should have an autofilter');
+    assert.equal(data.views[0].state, 'frozen', name + ' should freeze the header');
+    assert.equal(data.getCell('A1').font?.bold, true, name + ' should have a bold header');
   });
 });
 
 test('Devices sheet shows assigned users/apps/licenses and switch/port', () => {
-  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const sheet = workbook.Sheets['Devices'];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
-  const flat = rows.map((r) => r.join(' | ')).join('\n');
+  const text = sheetText(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Devices');
 
-  assert.ok(flat.includes('PC-1'));
-  assert.ok(flat.includes('Doe John'));
-  assert.ok(flat.includes('App1'));
-  assert.ok(flat.includes('Office'));
-  assert.ok(flat.includes('Switch-1'));
-  assert.ok(flat.includes('1')); // port number
+  assert.ok(text.includes('PC-1'));
+  assert.ok(text.includes('Doe John'));
+  assert.ok(text.includes('App1'));
+  assert.ok(text.includes('Office'));
+  assert.ok(text.includes('Switch-1 / Port 1'));
 });
 
 test('Ports sheet lists one row per port with status and device', () => {
-  const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const sheet = workbook.Sheets['Ports'];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
+  const ports = sheet(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Ports');
 
-  const dataRows = rows.slice(1);
-  assert.equal(dataRows.length, 2);
-  const flat = rows.map((r) => r.join(' | ')).join('\n');
-  assert.ok(flat.includes('PC-1'));
-  assert.ok(flat.includes('faulty'));
+  assert.equal(ports.rowCount, 3);
+  const text = sheetText(ExcelExport.buildWorkbook(docWithOneOfEach()), 'Ports');
+  assert.ok(text.includes('PC-1'));
+  assert.ok(text.includes('faulty'));
 });
 
-test('buildWorkbook writes to a binary array and reads back with the same sheets', () => {
+test('buildWorkbook writes to a binary array and reads back with the same sheets', async () => {
   const workbook = ExcelExport.buildWorkbook(docWithOneOfEach());
-  const binary = ExcelExport.writeBuffer(workbook);
+  const binary = await ExcelExport.writeBuffer(workbook);
 
-  assert.ok(binary instanceof ArrayBuffer);
-  const readBack = XLSX.read(binary, { type: 'array' });
-  assert.deepEqual(readBack.SheetNames, workbook.SheetNames);
+  const readBack = new ExcelJS.Workbook();
+  await readBack.xlsx.load(binary);
+  assert.deepEqual(sheetNames(readBack), sheetNames(workbook));
+  assert.equal(sheet(readBack, 'Devices').views[0].state, 'frozen');
 });
 
 test('buildWorkbook handles an empty document without throwing', () => {
   const workbook = ExcelExport.buildWorkbook(Schema.emptyDocument());
-  assert.deepEqual(workbook.SheetNames.length, 12);
+  assert.equal(workbook.worksheets.length, 12);
 });
