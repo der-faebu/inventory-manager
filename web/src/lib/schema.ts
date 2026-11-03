@@ -104,7 +104,7 @@ export const DEVICE_FIELDS: Field[] = [
 ];
 
 export const USER_FIELDS: Field[] = [
-  { key: 'display_name', label: 'Display name', type: 'text' },
+  { key: 'name', label: 'Display name', type: 'text' },
   { key: 'first_name', label: 'First Name', type: 'text' },
   { key: 'last_name', label: 'Last Name', type: 'text' },
   { key: 'login', label: 'Username', type: 'text' },
