@@ -1,10 +1,10 @@
 import { signal } from '@preact/signals';
 
 const THEME_STORAGE_KEY = 'inventory-manager.theme';
-const DEFAULT_SATURATION = 68;
-const DEFAULT_LIGHTNESS = 48;
+const DEFAULT_SATURATION = 36;
+const DEFAULT_LIGHTNESS = 25;
 export const THEME_PRESETS: { name: string; h: number; s?: number; l?: number }[] = [
-  { name: 'olive', h: 68, s: 39, l: 30 },
+  { name: 'olive', h: 80, s: 36, l: 25},
   { name: 'violet', h: 264 },
   { name: 'amber', h: 25 },
   { name: 'teal', h: 175 },
@@ -19,9 +19,9 @@ export interface ThemePreference {
 function loadThemePreference(): ThemePreference {
   try {
     const stored = JSON.parse(globalThis.localStorage.getItem(THEME_STORAGE_KEY) as string);
-    return Object.assign({ hue: 68, mode: 'system' }, stored || {});
+    return Object.assign({ hue: 80, mode: 'system' }, stored || {});
   } catch {
-    return { hue: 68, mode: 'system' };
+    return { hue: 80, mode: 'system' };
   }
 }
 
