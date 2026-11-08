@@ -75,8 +75,9 @@ export const MAILBOX_TYPES = ['Shared Mailbox', 'Resource', 'Distribution List']
 export const MAILBOX_HOSTING = ['M365', 'Exchange', 'Other'];
 export const MANUAL_PORT_STATUSES = ['faulty'];
 export const LICENSE_TYPE = ['perpetual','subscription']
+export const IP_TYPE = ['static', 'dhcp']
 
-export type FieldType = 'text' | 'select' | 'ip' | 'ref' | 'date';
+export type FieldType = 'text' | 'select' | 'ip' | 'ref' | 'date' 
 
 export interface Field {
   key: string;
@@ -84,14 +85,15 @@ export interface Field {
   type: FieldType;
   options?: string[];
   collection?: CollectionKey;
-}
+};
 
 export const DEVICE_FIELDS: Field[] = [
   { key: 'name', label: 'Device name', type: 'text' },
   { key: 'type', label: 'Type', type: 'select', options: DEVICE_TYPES },
   { key: 'model', label: 'Manufacturer / Model', type: 'text' },
   { key: 'serialNumber', label: 'Serial number', type: 'text' },
-  { key: 'ip', label: 'IP address', type: 'ip' },
+  { key: 'ip', label: 'IP address', type: 'text' }, 
+  { key: 'address_type', label: 'IP assignment', type: 'select' ,options: IP_TYPE},
   { key: 'mac', label: 'MAC address', type: 'text' },
   { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
   { key: 'room', label: 'Room', type: 'ref', collection: 'rooms' },
