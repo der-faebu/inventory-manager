@@ -67,17 +67,17 @@ export const CUSTOMER_FIELDS: CustomerField[] = [
 
 export const FORMAT = 'inventory-manager-1';
 
-export const DEVICE_TYPES = ['NUC', 'Laptop', 'PC', 'Thin Client', 'Server', 'Printer','Sonos', 'Other'];
+export const DEVICE_TYPES = ['NUC', 'Laptop', 'PC', 'Thin Client', 'Server', 'Printer', 'Other'];
 export const CONDITION = ['good', 'fair', 'replace'];
 export const NETWORK_CATEGORIES = ['Switch', 'Router', 'Firewall', 'Access Point', 'Other'];
 export const YES_NO = ['Yes', 'No'];
 export const MAILBOX_TYPES = ['Shared Mailbox', 'Resource', 'Distribution List'];
 export const MAILBOX_HOSTING = ['M365', 'Exchange', 'Other'];
 export const MANUAL_PORT_STATUSES = ['faulty'];
-export const LICENSE_TYPE = ['perpetual','subscription']
+export const LICENSE_TYPE = ['perpetual', 'subscription']
 export const IP_TYPE = ['static', 'dhcp']
 
-export type FieldType = 'text' | 'select' | 'ip' | 'ref' | 'date' 
+export type FieldType = 'text' | 'select' | 'ip' | 'ref' | 'date'
 
 export interface Field {
   key: string;
@@ -92,8 +92,8 @@ export const DEVICE_FIELDS: Field[] = [
   { key: 'type', label: 'Type', type: 'select', options: DEVICE_TYPES },
   { key: 'model', label: 'Manufacturer / Model', type: 'text' },
   { key: 'serialNumber', label: 'Serial number', type: 'text' },
-  { key: 'ip', label: 'IP address', type: 'text' }, 
-  { key: 'address_type', label: 'IP assignment', type: 'select' ,options: IP_TYPE},
+  { key: 'ip', label: 'IP address', type: 'text' },
+  { key: 'address_type', label: 'IP assignment', type: 'select', options: IP_TYPE },
   { key: 'mac', label: 'MAC address', type: 'text' },
   { key: 'location', label: 'Location', type: 'ref', collection: 'locations' },
   { key: 'room', label: 'Room', type: 'ref', collection: 'rooms' },
@@ -106,7 +106,7 @@ export const DEVICE_FIELDS: Field[] = [
 ];
 
 export const USER_FIELDS: Field[] = [
-  { key: 'name', label: 'Display name', type: 'text' },
+  { key: 'display_name', label: 'Display name', type: 'text' },
   { key: 'first_name', label: 'First Name', type: 'text' },
   { key: 'last_name', label: 'Last Name', type: 'text' },
   { key: 'login', label: 'Username', type: 'text' },
@@ -138,13 +138,13 @@ export const APPLICATION_FIELDS: Field[] = [
   { key: 'name', label: 'Application', type: 'text' },
   { key: 'version', label: 'Version', type: 'text' },
   { key: 'vendor', label: 'Vendor', type: 'text' },
-  { key: 'licenseType', label: 'License type', type: 'select',options: LICENSE_TYPE },
+  { key: 'licenseType', label: 'License type', type: 'select', options: LICENSE_TYPE },
   { key: 'businessCritical', label: 'Business-critical', type: 'select', options: YES_NO },
 ];
 
 export const LICENSE_FIELDS: Field[] = [
   { key: 'product', label: 'License type / Product', type: 'text' },
-  { key: 'licenseType', label: 'License type', type: 'select',options: LICENSE_TYPE },
+  { key: 'licenseType', label: 'License type', type: 'select', options: LICENSE_TYPE },
   { key: 'purchasedCount', label: 'Purchased (count)', type: 'text' },
   { key: 'term', label: 'Term / Renewal', type: 'text' },
   { key: 'remark', label: 'Remark', type: 'text' },
@@ -228,7 +228,7 @@ const TITLE_FIELDS: Partial<Record<CollectionKey, string[]>> = {
 };
 
 export function entityLabel(collectionKey: CollectionKey, entity: Entity): string {
-  const fields = TITLE_FIELDS[collectionKey] || ['name'];
+  const fields = TITLE_FIELDS[collectionKey] || ['name', 'display_name'];
   for (const field of fields) {
     const value = entity[field];
     if (value) {
